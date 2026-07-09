@@ -40,8 +40,7 @@ public class Main
         {  
             if(lowerInput.contains(emergencyKeywords[i]))
                 {
-                    String alertMessage = " ";
-                    alertMessage = switch (emergencyKeywords[i]) {
+                    String alertMessage = switch (emergencyKeywords[i]) {
                         case "fire" -> "Fire truck routed to your location";
                         case "health", "ambulance", "bleeding" -> "Paramedics deployed immediately";
                         case "theft", "crime" -> "Police units dispatched to the scene!";
