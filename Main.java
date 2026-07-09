@@ -35,10 +35,10 @@ public class Main
     public static void receiveAlerts(String userMessage)
     {
         String lowerInput = userMessage.toLowerCase();
-        for(int i = 0; i <= emergencyKeywords.length; i++)
-        {
-            
-                if(lowerInput.contains(emergencyKeywords[i]))
+        boolean alertProcessed = false; 
+        for(int i = 0; i < emergencyKeywords.length; i++)
+        {  
+            if(lowerInput.contains(emergencyKeywords[i]))
                 {
                     String alertMessage = " ";
                     alertMessage = switch (emergencyKeywords[i]) {
@@ -49,15 +49,16 @@ public class Main
                     };
 
                     System.out.println("[DISPATCH]: " + alertMessage);
+                    alertProcessed = true;
+                    break;
                 }
-                else
-                {
+                
+        }
+
+            if(!alertProcessed) {
                     System.out.println("[SYSTEM]: Alert description unclear. Forwarding to a human operator");
                 }
-            }
-        
+    
     }
 
 }
-
-
