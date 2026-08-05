@@ -5,7 +5,9 @@ public class TranslationService {
     // private String[] englishKeywords = new String[] { "fire", "bleed", "theft" };
     // private String[] frenchKeywords = new String[] { "incendie", "feu",
     // "blessure", "sang", "vol" };
-    private static final String[][] EMERGENCY_MAP = { { "feu", "fire" }, { "agni", "fire" }, { "fuego", "fire" } };
+    private static final String[][] EMERGENCY_MAP = {{ "feuer", "fire" }, { "feu", "fire" }, { "incendie", "fire" }, {"blessure", "bleed"},
+                                                    {"sang", "bleed"}, {"verletzung", "bleed"}, {"blut", "bleed"}, {"vole", "theft"}, 
+                                                    {"diebstahl", "theft"} };
 
     public String translateToEnglish(String input) {
         String translated = input.toLowerCase();
