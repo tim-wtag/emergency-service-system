@@ -3,7 +3,7 @@ package com.emergency.model;
 public class FireIncident extends EmergencyIncident {
     private boolean hazmatInvolved;
 
-    public FireIncident(String description, IncidentType type, boolean hazmatInvolved) {
+    public FireIncident(String description, boolean hazmatInvolved) {
         super(description, IncidentType.FIRE);
         this.hazmatInvolved = hazmatInvolved;
     }

@@ -62,7 +62,7 @@ public class TranslationServiceTest {
     @Test
     public void shouldLeaveUnknownWordUnchanged() {
         TranslationService translation = new TranslationService();
-        assertEquals("ambulance", translation.translateToEnglish("ambulance"));
+        assertEquals("anyword", translation.translateToEnglish("anyword"));
     }
 
     @Test
@@ -102,19 +102,22 @@ public class TranslationServiceTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"feuer, fire","feu, fire", "incendie, fire", "blessure, bleed", 
-                "sang, bleed", "blut, bleed", "verletzung, bleed",
-                "vole, theft", "diebstahl, theft"})
-    public void shouldTranslateKeywords(String input, String expected){
+    @CsvSource({ "feuer, fire", "feu, fire", "incendie, fire", "blessure, bleed",
+            "sang, bleed", "blut, bleed", "verletzung, bleed",
+            "vole, theft", "diebstahl, theft" })
+    public void shouldTranslateKeywords(String input, String expected) {
         TranslationService translationTest = new TranslationService();
         assertEquals(expected, translationTest.translateToEnglish(input));
     }
 
-    //@ParameterizedTest
-    /*@CsvSource({ "vole, theft", "feu, fire" })
-    void isBlank_ShouldReturnTrueForNullOrBlankStrings(String input, String expected) {
-        TranslationService translation = new TranslationService();
-        assertEquals(expected, translation.translateToEnglish(input));
-    }*/
+    // @ParameterizedTest
+    /*
+     * @CsvSource({ "vole, theft", "feu, fire" })
+     * void isBlank_ShouldReturnTrueForNullOrBlankStrings(String input, String
+     * expected) {
+     * TranslationService translation = new TranslationService();
+     * assertEquals(expected, translation.translateToEnglish(input));
+     * }
+     */
 
 }
