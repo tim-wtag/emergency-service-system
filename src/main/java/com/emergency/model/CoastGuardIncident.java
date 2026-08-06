@@ -4,7 +4,7 @@ public class CoastGuardIncident extends EmergencyIncident {
     private boolean peopleInDistress;
 
     public CoastGuardIncident(String description, boolean peopleInDistress) {
-        super(description, IncidentType.COSTAL);
+        super(description, IncidentType.COASTAL);
         this.peopleInDistress = peopleInDistress;
     }
 
