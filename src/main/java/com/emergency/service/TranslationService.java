@@ -5,7 +5,7 @@ public class TranslationService {
     // private String[] englishKeywords = new String[] { "fire", "bleed", "theft" };
     // private String[] frenchKeywords = new String[] { "incendie", "feu",
     // "blessure", "sang", "vol" };
-    private static final String[][] EMERGENCY_MAP = { { "feuer", "fire" }, { "feu", "fire" }, { "incendie", "fire" },
+    private  String[][] EMERGENCY_MAP = { { "feuer", "fire" }, { "feu", "fire" }, { "incendie", "fire" },
             { "blessure", "bleed" },
             { "sang", "bleed" }, { "verletzung", "bleed" }, { "blut", "bleed" }, { "docteur", "doctor" },
             { "arzt", "doctor" },
