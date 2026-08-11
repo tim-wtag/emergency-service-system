@@ -3,6 +3,8 @@ package com.emergency.controller;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
+import com.emergency.exception.NegativeInputException;
+
 public class PatientCount implements IntegerInput{
 
     @Override
@@ -11,10 +13,14 @@ public class PatientCount implements IntegerInput{
             try {
                 System.out.println("How many patients are injured? ");
                 int patientNum = scanner.nextInt();
+                if(patientNum < 0){
+                    throw new InputMismatchException();
+                }
 
                 return patientNum;
-            } catch (InputMismatchException e) {
-                System.out.println("Wrong input, it must be a positive number!");
+            } catch (NegativeInputException e) {
+                scanner.nextLine();
+                System.out.println(e);
             }
         }
     }
