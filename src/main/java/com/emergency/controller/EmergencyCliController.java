@@ -1,8 +1,5 @@
 package com.emergency.controller;
 
-import java.util.InputMismatchException;
-import java.util.Scanner;
-
 import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardIncident;
 import com.emergency.model.EmergencyIncident;
@@ -13,6 +10,8 @@ import com.emergency.model.UnknownIncident;
 import com.emergency.service.DispatchRouter;
 import com.emergency.service.TranslationService;
 import com.emergency.service.TriageService;
+
+import java.util.Scanner;
 
 public class EmergencyCliController {
 
@@ -43,32 +42,36 @@ public class EmergencyCliController {
                 String translated = translationService.translateToEnglish(input);
                 System.out.println(translated);
 
-                EmergencyIncident incident = triageService.parse(translated);
-
-                if (incident instanceof FireIncident) {
-                    boolean hazmatInvolved = new IsHazmaInvolved().input(scanner);
-                    incident = new FireIncident(incident.getDescription(), hazmatInvolved);
-                } else if (incident instanceof MedicalIncident) {
-                    int patientCount = new PatientCount().input(scanner);
-                    incident = new MedicalIncident(incident.getDescription(), patientCount);
-                } else if (incident instanceof PoliceIncident) {
-                    boolean weaponInvolved = new IsWeaponInvolved().input(scanner);
-                    incident = new PoliceIncident(incident.getDescription(), weaponInvolved);
-                } else if (incident instanceof CoastGuardIncident) {
-                    boolean peopleInDistress = new IsPeopleInDistress().input(scanner);
-                    incident = new CoastGuardIncident(incident.getDescription(), peopleInDistress);
-                } else if (incident instanceof UnknownIncident) {
-                    boolean prankCall = new IsPrankCall().input(scanner);
-                    incident = new UnknownIncident(incident.getDescription(), prankCall);
-                }
+                EmergencyIncident incident = switch (triageService.parse(translated)) {
+                    case FireIncident fireIncident -> {
+                        boolean hazmatInvolved = new IsHazmaInvolved().input(scanner);
+                        yield new FireIncident(fireIncident.getDescription(), hazmatInvolved);
+                    }
+                    case MedicalIncident medicalIncident -> {
+                        int patientCount = new PatientCount().input(scanner);
+                        yield  new MedicalIncident(medicalIncident.getDescription(), patientCount);
+                    }
+                    case PoliceIncident  policeIncident -> {
+                        boolean weaponInvolved = new IsWeaponInvolved().input(scanner);
+                        yield  new PoliceIncident(policeIncident.getDescription(), weaponInvolved);
+                    }
+                    case CoastGuardIncident coastGuardIncident -> {
+                        boolean peopleInDistress = new IsPeopleInDistress().input(scanner);
+                        yield new CoastGuardIncident(coastGuardIncident.getDescription(), peopleInDistress);
+                    }
+                    case UnknownIncident unknownIncident -> {
+                        boolean prankCall = new IsPrankCall().input(scanner);
+                        yield new UnknownIncident(unknownIncident.getDescription(), prankCall);
+                    }
+                    default -> throw new EmptyAlertException("Invalid input");
+                };
 
                 dispatchRouter.route(incident);
-
                 break;
 
             } catch (EmptyAlertException e) {
                 System.out.println(e);
-            } 
+            }
 
         }
         scanner.close();

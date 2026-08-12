@@ -14,17 +14,12 @@ public class TriageService {
             throw new EmptyAlertException("Cannot triage empty alert.");
         }
 
-        if (input.contains("fire")) {
-            return new FireIncident(input, false);
-        } else if (input.contains("bleed") || input.contains("doctor") || input.contains("ambulance")) {
-            return new MedicalIncident(input, 2);
-        } else if (input.contains("theft") || input.contains("crime")) {
-            return new PoliceIncident(input, false);
-        } else if (input.contains("drowning")) {
-            return new CoastGuardIncident(input, false);
-        } else {
-            return new UnknownIncident(input, false);
-        }
-
+        return switch (input.toLowerCase()) {
+            case "fire" -> new FireIncident(input, false);
+            case "bleed", "doctor", "ambulance" -> new MedicalIncident(input, 2);
+            case "theft", "crime" -> new PoliceIncident(input, false);
+            case "drowning" -> new CoastGuardIncident(input, false);
+            default -> new UnknownIncident(input, false);
+        };
     }
 }

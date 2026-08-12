@@ -10,9 +10,8 @@ public class IsPrankCall implements BooleanInput{
         while (true) {
             try {
                 System.out.println("Is this a prank call? (true/false)");
-                boolean prankCall = scanner.nextBoolean();
 
-                return prankCall;
+                return scanner.nextBoolean();
             } catch (InputMismatchException e) {
                 scanner.nextLine();
                 System.out.println("Wrong input, it can either true or false!");

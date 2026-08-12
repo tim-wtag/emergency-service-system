@@ -10,9 +10,8 @@ public class IsHazmaInvolved implements BooleanInput {
         while (true) {
             try {
                 System.out.println("Is hazmat involved? (true/false)");
-                boolean hazmat = scanner.nextBoolean();
-                
-                return hazmat;
+
+                return scanner.nextBoolean();
             } catch (InputMismatchException e) {
                 scanner.nextLine();
                 System.out.println("Wrong input, it can either true or false!");

@@ -10,9 +10,8 @@ public class IsPeopleInDistress implements BooleanInput{
         while (true) {
             try {
                 System.out.println("Are people in distress? (true/false)");
-                boolean distress = scanner.nextBoolean();
 
-                return distress;
+                return scanner.nextBoolean();
             } catch (InputMismatchException e) {
                 scanner.nextLine();
                 System.out.println("Wrong input, it can either true or false!");

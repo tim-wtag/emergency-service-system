@@ -10,9 +10,8 @@ public class IsWeaponInvolved implements BooleanInput{
         while (true) {
             try {
                 System.out.println("Is weapon involved? (true/false)");
-                boolean weapon = scanner.nextBoolean();
 
-                return weapon;
+                return scanner.nextBoolean();
             } catch (InputMismatchException e) {
                 scanner.nextLine();
                 System.out.println("Wrong input, it can either true or false!");
