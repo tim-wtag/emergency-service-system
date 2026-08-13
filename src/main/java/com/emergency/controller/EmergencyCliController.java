@@ -46,19 +46,24 @@ public class EmergencyCliController {
                 EmergencyIncident incident = triageService.parse(translated);
 
                 if (incident instanceof FireIncident) {
-                    boolean hazmatInvolved = new IsHazmaInvolved().input(scanner);
+                    System.out.println("Are there any hazardous materials? ");
+                    boolean hazmatInvolved = new EmergencyInputHelper().askTrueOrFalseQuestions(scanner);
                     incident = new FireIncident(incident.getDescription(), hazmatInvolved);
                 } else if (incident instanceof MedicalIncident) {
-                    int patientCount = new PatientCount().input(scanner);
+                    System.out.println("How many patients are injured? ");
+                    int patientCount = new EmergencyInputHelper().askForNumber(scanner);
                     incident = new MedicalIncident(incident.getDescription(), patientCount);
                 } else if (incident instanceof PoliceIncident) {
-                    boolean weaponInvolved = new IsWeaponInvolved().input(scanner);
+                    System.out.println("Are there any weapon involved? ");
+                    boolean weaponInvolved = new EmergencyInputHelper().askTrueOrFalseQuestions(scanner);
                     incident = new PoliceIncident(incident.getDescription(), weaponInvolved);
                 } else if (incident instanceof CoastGuardIncident) {
-                    boolean peopleInDistress = new IsPeopleInDistress().input(scanner);
+                    System.out.println("Do we have people in distress? ");
+                    boolean peopleInDistress = new EmergencyInputHelper().askTrueOrFalseQuestions(scanner);
                     incident = new CoastGuardIncident(incident.getDescription(), peopleInDistress);
                 } else if (incident instanceof UnknownIncident) {
-                    boolean prankCall = new IsPrankCall().input(scanner);
+                    System.out.println("Is this a prank call? ");
+                    boolean prankCall = new EmergencyInputHelper().askTrueOrFalseQuestions(scanner);
                     incident = new UnknownIncident(incident.getDescription(), prankCall);
                 }
 
