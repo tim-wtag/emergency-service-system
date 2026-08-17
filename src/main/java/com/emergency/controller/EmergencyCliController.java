@@ -3,6 +3,9 @@ package com.emergency.controller;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardIncident;
 import com.emergency.model.EmergencyIncident;
@@ -19,11 +22,14 @@ public class EmergencyCliController {
     private final TranslationService translationService;
     private final TriageService triageService;
     private final DispatchRouter dispatchRouter;
+    private final EmergencyInputHelper helper;
+    private static final Logger logger = LoggerFactory.getLogger(EmergencyCliController.class);
 
     public EmergencyCliController() {
         translationService = new TranslationService();
         triageService = new TriageService();
         dispatchRouter = new DispatchRouter();
+        helper = new EmergencyInputHelper();
     }
 
     public void execution() {
@@ -31,49 +37,59 @@ public class EmergencyCliController {
         Scanner scanner = new Scanner(System.in);
         String input;
         while (true) {
-            System.out.println("Please enter your emergency description (or type exit to quit): ");
+            logger.info("Please enter your emergency description (or type exit to quit): ");
             input = scanner.nextLine();
 
             try {
                 if (input.equalsIgnoreCase("exit")) {
-                    System.out.println("Goodbye, have a nice day!");
+                    logger.info("Goodbye, have a nice day!");
                     break;
                 }
 
                 String translated = translationService.translateToEnglish(input);
-                System.out.println(translated);
+                logger.info(translated);
 
-                EmergencyIncident incident = triageService.parse(translated);
-
-                if (incident instanceof FireIncident) {
-                    System.out.println("Are there any hazardous materials? ");
-                    boolean hazmatInvolved = new EmergencyInputHelper().askTrueOrFalseQuestions(scanner);
-                    incident = new FireIncident(incident.getDescription(), hazmatInvolved);
-                } else if (incident instanceof MedicalIncident) {
-                    System.out.println("How many patients are injured? ");
-                    int patientCount = new EmergencyInputHelper().askForNumber(scanner);
-                    incident = new MedicalIncident(incident.getDescription(), patientCount);
-                } else if (incident instanceof PoliceIncident) {
-                    System.out.println("Are there any weapon involved? ");
-                    boolean weaponInvolved = new EmergencyInputHelper().askTrueOrFalseQuestions(scanner);
-                    incident = new PoliceIncident(incident.getDescription(), weaponInvolved);
-                } else if (incident instanceof CoastGuardIncident) {
-                    System.out.println("Do we have people in distress? ");
-                    boolean peopleInDistress = new EmergencyInputHelper().askTrueOrFalseQuestions(scanner);
-                    incident = new CoastGuardIncident(incident.getDescription(), peopleInDistress);
-                } else if (incident instanceof UnknownIncident) {
-                    System.out.println("Is this a prank call? ");
-                    boolean prankCall = new EmergencyInputHelper().askTrueOrFalseQuestions(scanner);
-                    incident = new UnknownIncident(incident.getDescription(), prankCall);
-                }
-
+                EmergencyIncident[] incidents = triageService.parse(translated);
+                for(EmergencyIncident incident : incidents){
+                    if(incident == null){
+                        continue;
+                    }
+                    incident = switch (incident.getType()) {
+                    case FIRE -> {
+                        logger.info("Are there any hazardous materials? ");
+                        boolean hazmatInvolved = helper.askTrueOrFalseQuestions(scanner);
+                        yield new FireIncident(incident.getDescription(), hazmatInvolved);
+                    }
+                    case MEDICAL -> {
+                        logger.info("How many patients are injured? ");
+                        int patientCount = helper.askForNumber(scanner);
+                        yield new MedicalIncident(incident.getDescription(), patientCount);
+                    }
+                    case POLICE -> {
+                        logger.info("Are there any weapon involved? ");
+                        boolean weaponInvolved = helper.askTrueOrFalseQuestions(scanner);
+                        yield new PoliceIncident(incident.getDescription(), weaponInvolved);
+                    }
+                    case COASTAL -> {
+                        logger.info("Do we have people in distress? ");
+                        boolean peopleInDistress = helper.askTrueOrFalseQuestions(scanner);
+                        yield new CoastGuardIncident(incident.getDescription(), peopleInDistress);
+                    }
+                    case UNKNOWN -> {
+                        logger.info("Is this a prank call? ");
+                        boolean prankCall = helper.askTrueOrFalseQuestions(scanner);
+                        yield new UnknownIncident(incident.getDescription(), prankCall);
+                    }
+                    default -> incident;
+                };
+                
                 dispatchRouter.route(incident);
-
-                break;
-
-            } catch (EmptyAlertException e) {
-                System.out.println(e);
-            } 
+            }
+ 
+            }catch (EmptyAlertException e) {
+                logger.error("", e);
+            }
+            break;
 
         }
         scanner.close();

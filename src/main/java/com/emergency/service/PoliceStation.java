@@ -8,7 +8,7 @@ public class PoliceStation implements EmergencyDispatcher {
     @Override
     public void dispatch(EmergencyIncident incident) {
         PoliceIncident police = (PoliceIncident) incident;
-        System.out.println("[DISPATCH - POLICE] Patrol units dispatched. Weapon: " + police.isWeaponInvolved());
+        logger.info("[DISPATCH - POLICE] Patrol units dispatched. Weapon: " + police.isWeaponInvolved());
     }
 
 }

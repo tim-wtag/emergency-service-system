@@ -1,10 +1,10 @@
 package com.emergency;
 
-/**
- * Hello world!
- */
+import com.emergency.controller.EmergencyCliController;
+
 public class App {
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        EmergencyCliController controller = new EmergencyCliController();
+        controller.execution();
     }
 }

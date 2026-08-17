@@ -3,15 +3,20 @@ package com.emergency.controller;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.emergency.exception.NegativeInputException;
 
 public class EmergencyInputHelper {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmergencyInputHelper.class);
+
     public boolean askTrueOrFalseQuestions(Scanner scanner) {
-        // what happen if user input yes or no, (y/n)
         while (true) {
             try {
                 String inputA = scanner.nextLine();
-                boolean inputB = switch (inputA.toLowerCase(null)) {
+                boolean inputB = switch (inputA.toLowerCase()) {
                     case "yes", "true", "y" -> true;
                     case "no", "false", "n" -> false;
                     default -> throw new InputMismatchException();
@@ -19,8 +24,8 @@ public class EmergencyInputHelper {
                 return inputB;
             } catch (InputMismatchException e) {
                 scanner.nextLine();
-                System.out.println("Wrong input, it can either true or false!");
-                System.out.println("Please input again: ");
+                logger.warn("Wrong input, it can either true or false!");
+                logger.warn("Please input again: ");
             }
         }
     }
@@ -36,12 +41,13 @@ public class EmergencyInputHelper {
                 return patientNum;
             } catch (NegativeInputException e) {
                 scanner.nextLine();
-                System.out.println("Please input again: ");
+                logger.warn("Wrong input as it cannot be negative, it must be a positive number!");
+                logger.warn("Please input again: ");
             }
             catch(InputMismatchException e){
                 scanner.nextLine();
-                System.out.println("Must type a number! ");
-                System.out.println("Please input again: ");
+                logger.warn("Must type a number! ");
+                logger.warn("Please input again: ");
             }
         }
     }
