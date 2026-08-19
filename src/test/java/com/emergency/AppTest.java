@@ -46,7 +46,7 @@ public class AppTest {
         assertTrue(capturedOutput.contains("[DISPATCH - MEDICAL] Paramedics deployed. Patients: 2"),
                 "The output did not contain the expected medical dispatch message.");
     }
-
+    
     @Test
     public void shouldProcessUnknownEmergencyAndDispatchOperator() {
         String simulatedUserInput = "hello\nyes\nexit\n";
