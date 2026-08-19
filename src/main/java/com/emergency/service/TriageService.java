@@ -14,14 +14,14 @@ import com.emergency.model.PoliceIncident;
 import com.emergency.model.UnknownIncident;
 
 public class TriageService {
-private static final Logger logger = LoggerFactory.getLogger(TriageService.class);
+//private static final Logger logger = LoggerFactory.getLogger(TriageService.class);
 
     public EmergencyIncident[] parse(String input) {
         if (input == null || input.trim().isEmpty()) {
             throw new EmptyAlertException("Cannot triage empty alert.");
         }
 
-        EmergencyIncident[] incidents = new EmergencyIncident[EmergencyKeyword.values().length];
+        EmergencyIncident[] incidents = new EmergencyIncident[EmergencyKeyword.values().length + 1];
 
         Integer i = 0;
 
@@ -30,27 +30,18 @@ private static final Logger logger = LoggerFactory.getLogger(TriageService.class
                 if (input.contains(keywords)) {
                     switch (keyword) {
                         case FIRE_KEYWORD -> {
-                           // incidents[i++] = new FireIncident(input, false);
-                            addIncident(incidents, new FireIncident(input, false), i);
+                            addIncident(incidents, new FireIncident(input, false), i++);
                         }
                         case MEDICAL_KEYWORD -> {
-                            addIncident(incidents, new MedicalIncident(input, 0), i);
+                            addIncident(incidents, new MedicalIncident(input, 0), i++);
                         }
                         case POLICE_KEYWORD -> {
-                            //incidents[i++] = new PoliceIncident(input, false);
-                            addIncident(incidents, new PoliceIncident(input, false), i);
+                            addIncident(incidents, new PoliceIncident(input, false), i++);
                         }
                         case COASTAL_KEYWORD -> {
-                           // incidents[i++] = new CoastGuardIncident(input, false);
-                            addIncident(incidents, new CoastGuardIncident(input, false), i);
+                            addIncident(incidents, new CoastGuardIncident(input, false), i++);
                             
                         }
-                        /*case UNKNOWN_KEYWORD -> {
-                            incidents[i++] = new UnknownIncident(input, false);
-                        }
-                        default -> {
-                            throw new IllegalStateException();
-                        }*/
                     }
 
                 }
@@ -70,7 +61,6 @@ private static final Logger logger = LoggerFactory.getLogger(TriageService.class
             }
         }
         incidents[i] = incident;
-        i = i+1;
-        
+        //i = i+1;
     }
 }

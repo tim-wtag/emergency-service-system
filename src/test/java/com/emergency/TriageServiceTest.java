@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardIncident;
 import com.emergency.model.EmergencyIncident;
+import com.emergency.model.EmergencyKeyword;
 import com.emergency.model.FireIncident;
 import com.emergency.model.IncidentType;
 import com.emergency.model.MedicalIncident;
@@ -71,4 +72,11 @@ public class TriageServiceTest {
         EmergencyIncident[] incidents = triage.parse("hello");
         assertInstanceOf(UnknownIncident.class, incidents[0]);
     }
+
+    @Test
+    public void shouldCreateMultipleIncidents(){
+        EmergencyIncident[] incidents = triage.parse("fire hello ambulance needed crime");
+        assertInstanceOf(UnknownIncident.class, incidents[EmergencyKeyword.values().length + 1]);
+    }
+
 }
