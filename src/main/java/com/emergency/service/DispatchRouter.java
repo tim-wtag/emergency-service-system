@@ -2,8 +2,6 @@ package com.emergency.service;
 
 import com.emergency.model.EmergencyIncident;
 
-//import com.emergency.model.EmergencyIncident;
-
 public class DispatchRouter {
     public void route(EmergencyIncident incident) {
         switch (incident.getType()) {

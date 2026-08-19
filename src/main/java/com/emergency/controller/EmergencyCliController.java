@@ -19,11 +19,11 @@ import com.emergency.service.TriageService;
 
 public class EmergencyCliController {
 
+    private static final Logger logger = LoggerFactory.getLogger(EmergencyCliController.class);
     private final TranslationService translationService;
     private final TriageService triageService;
     private final DispatchRouter dispatchRouter;
     private final EmergencyInputHelper helper;
-    private static final Logger logger = LoggerFactory.getLogger(EmergencyCliController.class);
 
     public EmergencyCliController() {
         translationService = new TranslationService();
@@ -50,43 +50,42 @@ public class EmergencyCliController {
                 logger.info(translated);
 
                 EmergencyIncident[] incidents = triageService.parse(translated);
-                for(EmergencyIncident incident : incidents){
-                    if(incident == null){
+                for (EmergencyIncident incident : incidents) {
+                    if (incident == null) {
                         continue;
                     }
                     incident = switch (incident.getType()) {
-                    case FIRE -> {
-                        logger.info("Are there any hazardous materials? ");
-                        boolean hazmatInvolved = helper.askTrueOrFalseQuestions(scanner);
-                        yield new FireIncident(incident.getDescription(), hazmatInvolved);
-                    }
-                    case MEDICAL -> {
-                        logger.info("How many patients are injured? ");
-                        int patientCount = helper.askForNumber(scanner);
-                        yield new MedicalIncident(incident.getDescription(), patientCount);
-                    }
-                    case POLICE -> {
-                        logger.info("Are there any weapon involved? ");
-                        boolean weaponInvolved = helper.askTrueOrFalseQuestions(scanner);
-                        yield new PoliceIncident(incident.getDescription(), weaponInvolved);
-                    }
-                    case COASTAL -> {
-                        logger.info("Do we have people in distress? ");
-                        boolean peopleInDistress = helper.askTrueOrFalseQuestions(scanner);
-                        yield new CoastGuardIncident(incident.getDescription(), peopleInDistress);
-                    }
-                    case UNKNOWN -> {
-                        logger.info("Is this a prank call? ");
-                        boolean prankCall = helper.askTrueOrFalseQuestions(scanner);
-                        yield new UnknownIncident(incident.getDescription(), prankCall);
-                    }
-                    default -> incident;
-                };
-                
-                dispatchRouter.route(incident);
-            }
- 
-            }catch (EmptyAlertException e) {
+                        case FIRE -> {
+                            logger.info("Are there any hazardous materials? ");
+                            boolean hazmatInvolved = helper.askTrueOrFalseQuestions(scanner);
+                            yield new FireIncident(incident.getDescription(), hazmatInvolved);
+                        }
+                        case MEDICAL -> {
+                            logger.info("How many patients are injured? ");
+                            int patientCount = helper.askForNumber(scanner);
+                            yield new MedicalIncident(incident.getDescription(), patientCount);
+                        }
+                        case POLICE -> {
+                            logger.info("Are there any weapon involved? ");
+                            boolean weaponInvolved = helper.askTrueOrFalseQuestions(scanner);
+                            yield new PoliceIncident(incident.getDescription(), weaponInvolved);
+                        }
+                        case COASTAL -> {
+                            logger.info("Do we have people in distress? ");
+                            boolean peopleInDistress = helper.askTrueOrFalseQuestions(scanner);
+                            yield new CoastGuardIncident(incident.getDescription(), peopleInDistress);
+                        }
+                        case UNKNOWN -> {
+                            logger.info("Is this a prank call? ");
+                            boolean prankCall = helper.askTrueOrFalseQuestions(scanner);
+                            yield new UnknownIncident(incident.getDescription(), prankCall);
+                        }
+                        default -> incident;
+                    };
+
+                    dispatchRouter.route(incident);
+                }
+            } catch (EmptyAlertException e) {
                 logger.error("", e);
             }
             break;

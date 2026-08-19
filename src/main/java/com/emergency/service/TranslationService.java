@@ -1,7 +1,5 @@
 package com.emergency.service;
 
-import java.util.regex.Pattern;
-
 public class TranslationService {
 
     private String[][] EMERGENCY_MAP = { { "feuer", "fire" }, { "feu", "fire" }, { "incendie", "fire" },
