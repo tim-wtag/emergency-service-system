@@ -1,10 +1,7 @@
 package com.emergency;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -12,9 +9,7 @@ import org.junit.jupiter.api.Test;
 import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardIncident;
 import com.emergency.model.EmergencyIncident;
-import com.emergency.model.EmergencyKeyword;
 import com.emergency.model.FireIncident;
-import com.emergency.model.IncidentType;
 import com.emergency.model.MedicalIncident;
 import com.emergency.model.PoliceIncident;
 import com.emergency.model.UnknownIncident;
@@ -38,52 +33,51 @@ public class TriageServiceTest {
         assertThrows(EmptyAlertException.class, () -> triage.parse(""));
     }
 
-     @Test
+    @Test
     public void shouldThrowExceptionForWhitespaceInput() {
         assertThrows(EmptyAlertException.class, () -> triage.parse("  "));
     }
 
     @Test
-    public void shouldCreateFireIncident(){
+    public void shouldCreateFireIncident() {
         EmergencyIncident[] incidents = triage.parse("fire");
         assertInstanceOf(FireIncident.class, incidents[0]);
     }
 
     @Test
-    public void shouldCreateMedicalIncident(){
+    public void shouldCreateMedicalIncident() {
         EmergencyIncident[] incidents = triage.parse("bleed");
         assertInstanceOf(MedicalIncident.class, incidents[0]);
     }
 
     @Test
-    public void shouldCreatePoliceIncident(){
+    public void shouldCreatePoliceIncident() {
         EmergencyIncident[] incidents = triage.parse("crime");
         assertInstanceOf(PoliceIncident.class, incidents[0]);
     }
 
     @Test
-    public void shouldCreateCoastGuardIncident(){
+    public void shouldCreateCoastGuardIncident() {
         EmergencyIncident[] incidents = triage.parse("drowning");
         assertInstanceOf(CoastGuardIncident.class, incidents[0]);
     }
 
     @Test
-    public void shouldCreateUnknownIncident(){
+    public void shouldCreateUnknownIncident() {
         EmergencyIncident[] incidents = triage.parse("hello");
         assertInstanceOf(UnknownIncident.class, incidents[0]);
     }
 
     @Test
-    public void shouldCreateMultipleIncidents(){
+    public void shouldCreateMultipleIncidents() {
         EmergencyIncident[] incidents = triage.parse("fire crime bleed theft");
-        //assertEquals(3, incidents.length);
         assertInstanceOf(FireIncident.class, incidents[0]);
         assertInstanceOf(MedicalIncident.class, incidents[1]);
         assertInstanceOf(PoliceIncident.class, incidents[2]);
     }
 
     @Test
-    public void shouldCreateAllIncidents(){
+    public void shouldCreateAllIncidents() {
         EmergencyIncident[] incidents = triage.parse("fire ambulance doctor crime theft drowning bleed");
         assertInstanceOf(FireIncident.class, incidents[0]);
         assertInstanceOf(MedicalIncident.class, incidents[1]);

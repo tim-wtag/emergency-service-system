@@ -1,6 +1,5 @@
 package com.emergency.controller;
 
-import java.util.InputMismatchException;
 import java.util.Scanner;
 
 import org.slf4j.Logger;

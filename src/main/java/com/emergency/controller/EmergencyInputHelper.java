@@ -34,7 +34,7 @@ public class EmergencyInputHelper {
         while (true) {
             try {
                 int patientNum = scanner.nextInt();
-                if(patientNum < 0){
+                if (patientNum < 0) {
                     throw new NegativeInputException("");
                 }
 
@@ -43,8 +43,7 @@ public class EmergencyInputHelper {
                 scanner.nextLine();
                 logger.warn("Wrong input as it cannot be negative, it must be a positive number!");
                 logger.warn("Please input again: ");
-            }
-            catch(InputMismatchException e){
+            } catch (InputMismatchException e) {
                 scanner.nextLine();
                 logger.warn("Must type a number! ");
                 logger.warn("Please input again: ");
