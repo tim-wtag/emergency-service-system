@@ -75,8 +75,20 @@ public class TriageServiceTest {
 
     @Test
     public void shouldCreateMultipleIncidents(){
-        EmergencyIncident[] incidents = triage.parse("fire hello ambulance needed crime");
-        assertInstanceOf(UnknownIncident.class, incidents[EmergencyKeyword.values().length + 1]);
+        EmergencyIncident[] incidents = triage.parse("fire crime bleed theft");
+        //assertEquals(3, incidents.length);
+        assertInstanceOf(FireIncident.class, incidents[0]);
+        assertInstanceOf(MedicalIncident.class, incidents[1]);
+        assertInstanceOf(PoliceIncident.class, incidents[2]);
+    }
+
+    @Test
+    public void shouldCreateAllIncidents(){
+        EmergencyIncident[] incidents = triage.parse("fire ambulance doctor crime theft drowning bleed");
+        assertInstanceOf(FireIncident.class, incidents[0]);
+        assertInstanceOf(MedicalIncident.class, incidents[1]);
+        assertInstanceOf(PoliceIncident.class, incidents[2]);
+        assertInstanceOf(CoastGuardIncident.class, incidents[3]);
     }
 
 }

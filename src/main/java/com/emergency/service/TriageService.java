@@ -14,7 +14,15 @@ import com.emergency.model.PoliceIncident;
 import com.emergency.model.UnknownIncident;
 
 public class TriageService {
-//private static final Logger logger = LoggerFactory.getLogger(TriageService.class);
+     private boolean addIncident(EmergencyIncident[] incidents, EmergencyIncident incident, Integer i) {
+        for (EmergencyIncident inc : incidents) {
+            if (inc != null && inc.getType().equals(incident.getType())) {
+                return false;
+            }
+        }
+        incidents[i] = incident;
+        return true;
+    }
 
     public EmergencyIncident[] parse(String input) {
         if (input == null || input.trim().isEmpty()) {
@@ -30,17 +38,24 @@ public class TriageService {
                 if (input.contains(keywords)) {
                     switch (keyword) {
                         case FIRE_KEYWORD -> {
-                            addIncident(incidents, new FireIncident(input, false), i++);
+                            if(addIncident(incidents, new FireIncident(input, false), i)){
+                                i++;
+                            }
                         }
                         case MEDICAL_KEYWORD -> {
-                            addIncident(incidents, new MedicalIncident(input, 0), i++);
+                            if(addIncident(incidents, new MedicalIncident(input, 0), i)){
+                                i++;
+                            }
                         }
                         case POLICE_KEYWORD -> {
-                            addIncident(incidents, new PoliceIncident(input, false), i++);
+                            if(addIncident(incidents, new PoliceIncident(input, false), i)){
+                                i++;
+                            }
                         }
                         case COASTAL_KEYWORD -> {
-                            addIncident(incidents, new CoastGuardIncident(input, false), i++);
-                            
+                            if(addIncident(incidents, new CoastGuardIncident(input, false), i)){
+                                i++;
+                            }
                         }
                     }
 
@@ -54,13 +69,4 @@ public class TriageService {
         return incidents;
     }
 
-    private void addIncident(EmergencyIncident[] incidents, EmergencyIncident incident, Integer i) {
-        for (EmergencyIncident inc : incidents) {
-            if (inc != null && inc.getType().equals(incident.getType())) {
-                return;
-            }
-        }
-        incidents[i] = incident;
-        //i = i+1;
-    }
 }
