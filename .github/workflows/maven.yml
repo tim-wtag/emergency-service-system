@@ -18,7 +18,7 @@ jobs:
           cache: maven
 
       - name: Build and test with Maven
-        run: mvn -B -T 1C verify --file pom.xml
+        run: mvn -B -T 1C verify pom.xml
         env:
           MAVEN_OPTS: >-
             -Xms1g -Xmx1g
