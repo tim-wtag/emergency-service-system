@@ -1,0 +1,41 @@
+name: emergency cicd
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and test with Maven
+        run: mvn -B -T 1C verify --file pom.xml
+        env:
+          MAVEN_OPTS: >-
+            -Xms1g -Xmx1g
+            -XX:+UseG1GC
+            -XX:MaxGCPauseMillis=200
+            -XX:+UseStringDeduplication
+            -XX:MaxMetaspaceSize=256m
+
+  build-gate:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check build result
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "Build failed or was cancelled"
+            exit 1
+          fi
+          echo "Build passed"
