@@ -79,7 +79,6 @@ public class EmergencyCliController {
                             boolean prankCall = helper.askTrueOrFalseQuestions(scanner);
                             yield new UnknownIncident(incident.getDescription(), prankCall);
                         }
-                        default -> incident;
                     };
 
                     dispatchRouter.route(incident);

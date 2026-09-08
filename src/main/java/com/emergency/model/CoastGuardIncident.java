@@ -1,7 +1,7 @@
 package com.emergency.model;
 
 public class CoastGuardIncident extends EmergencyIncident {
-    private boolean peopleInDistress;
+    private final boolean peopleInDistress;
 
     public CoastGuardIncident(String description, boolean peopleInDistress) {
         super(description, IncidentType.COASTAL);

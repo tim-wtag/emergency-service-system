@@ -1,7 +1,7 @@
 package com.emergency.model;
 
 public class MedicalIncident extends EmergencyIncident {
-    private int patientCount;
+    private final int patientCount;
 
     public MedicalIncident(String description, int patientCount) {
         super(description, IncidentType.MEDICAL);

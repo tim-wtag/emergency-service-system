@@ -2,7 +2,7 @@ package com.emergency.service;
 
 public class TranslationService {
 
-    private String[][] EMERGENCY_MAP = { { "feuer", "fire" }, { "feu", "fire" }, { "incendie", "fire" },
+    private final String[][] EMERGENCY_MAP = { { "feuer", "fire" }, { "feu", "fire" }, { "incendie", "fire" },
             { "blessure", "bleed" },
             { "sang", "bleed" }, { "verletzung", "bleed" }, { "blut", "bleed" }, { "docteur", "doctor" },
             { "arzt", "doctor" },
@@ -12,9 +12,9 @@ public class TranslationService {
 
     public String translateToEnglish(String input) {
         String translated = input.toLowerCase();
-        for (int i = 0; i < EMERGENCY_MAP.length; i++) {
-            String keyword = EMERGENCY_MAP[i][0];
-            String value = EMERGENCY_MAP[i][1];
+        for (String[] strings : EMERGENCY_MAP) {
+            String keyword = strings[0];
+            String value = strings[1];
 
             translated = translated.replaceAll("\\b" + keyword + "\\b", value);
         }

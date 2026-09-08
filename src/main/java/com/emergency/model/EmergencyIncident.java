@@ -1,8 +1,8 @@
 package com.emergency.model;
 
 public abstract class EmergencyIncident {
-    private String description;
-    private IncidentType type;
+    private final String description;
+    private final IncidentType type;
 
     public EmergencyIncident(String description, IncidentType type) {
         this.description = description;

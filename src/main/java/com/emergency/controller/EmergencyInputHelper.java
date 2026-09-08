@@ -16,12 +16,11 @@ public class EmergencyInputHelper {
         while (true) {
             try {
                 String inputA = scanner.nextLine();
-                boolean inputB = switch (inputA.toLowerCase()) {
+                return switch (inputA.toLowerCase()) {
                     case "yes", "true", "y" -> true;
                     case "no", "false", "n" -> false;
                     default -> throw new InputMismatchException();
                 };
-                return inputB;
             } catch (InputMismatchException e) {
                 scanner.nextLine();
                 logger.warn("Wrong input, it can either true or false!");
