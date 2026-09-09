@@ -11,4 +11,8 @@ public class FireIncident extends EmergencyIncident {
     public boolean isHazmatInvolved() {
         return hazmatInvolved;
     }
+
+    public void setHazmatInvolved(boolean hazmatInvolved){
+        this.hazmatInvolved = hazmatInvolved;
+    }
 }

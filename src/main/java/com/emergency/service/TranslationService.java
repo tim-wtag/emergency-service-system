@@ -1,25 +1,45 @@
 package com.emergency.service;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class TranslationService {
 
-    private String[][] EMERGENCY_MAP = { { "feuer", "fire" }, { "feu", "fire" }, { "incendie", "fire" },
-            { "blessure", "bleed" },
-            { "sang", "bleed" }, { "verletzung", "bleed" }, { "blut", "bleed" }, { "docteur", "doctor" },
-            { "arzt", "doctor" },
-            { "ambulance", "ambulance" }, { "krankenwagen", "ambulance" }, { "vole", "theft" },
-            { "diebstahl", "theft" }, { "crime", "crime" }, { "verbrechen", "crime" }, { "noyade", "drowning" },
-            { "ertrinken", "drowning" } };
+    private final Map<String, String> translationMap = new LinkedHashMap<>();
+
+    public TranslationService(String filePath) throws Exception{
+        this(new FileInputStream(filePath));
+    }
+
+    public TranslationService(InputStream jsonStream) throws Exception {
+        Map<String, Map<String, String>> data = new ObjectMapper().readValue(
+            jsonStream, 
+            new TypeReference<Map<String, Map<String, String>>>() {}
+        );
+
+        Map<String, String> tempTranslationMap = new HashMap<>();
+        for (Map<String, String> category : data.values()) {
+            category.forEach((englishKey, word) -> tempTranslationMap.put(word.toLowerCase(), englishKey));
+        }
+
+        tempTranslationMap.keySet().stream()
+                .sorted((a, b) -> Integer.compare(b.length(), a.length()))
+                .forEach(key -> translationMap.put(key, tempTranslationMap.get(key)));
+    }
 
     public String translateToEnglish(String input) {
         String translated = input.toLowerCase();
-        for (int i = 0; i < EMERGENCY_MAP.length; i++) {
-            String keyword = EMERGENCY_MAP[i][0];
-            String value = EMERGENCY_MAP[i][1];
-
-            translated = translated.replaceAll("\\b" + keyword + "\\b", value);
+        for (Map.Entry<String, String> entry : translationMap.entrySet()) {
+            translated = translated.replaceAll("\\b" + entry.getKey() + "\\b", entry.getValue());
         }
-
         return translated;
     }
 
+    
 }

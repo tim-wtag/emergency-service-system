@@ -1,5 +1,7 @@
 package com.emergency.service;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardIncident;
 import com.emergency.model.EmergencyIncident;
@@ -10,6 +12,8 @@ import com.emergency.model.PoliceIncident;
 import com.emergency.model.UnknownIncident;
 
 public class TriageService {
+    private final AtomicInteger id = new AtomicInteger(0);
+
     private boolean addIncident(EmergencyIncident[] incidents, EmergencyIncident incident, Integer i) {
         for (EmergencyIncident inc : incidents) {
             if (inc != null && inc.getType().equals(incident.getType())) {

@@ -11,4 +11,8 @@ public class CoastGuardIncident extends EmergencyIncident {
     public boolean isPeopleInDistress() {
         return peopleInDistress;
     }
+
+    public void setPeopleInDistress(boolean peopleInDistress){
+        this.peopleInDistress = peopleInDistress;
+    }
 }

@@ -1,0 +1,34 @@
+{
+    "english": {
+        "fire": "fire",
+        "bleed": "bleed",
+        "blood": "bleed",
+        "doctor": "doctor",
+        "ambulance": "ambulance",
+        "theft": "theft",
+        "crime": "crime",
+        "drowning": "drowning"
+    },
+
+    "french":{
+        "fire": "feu",
+        "bleed": "blessure",
+        "blood": "sang",
+        "doctor": "docteur",
+        "ambulance": "ambulance",
+        "theft": "vole",
+        "crime": "crime",
+        "drowning": "noyade"
+    },
+
+    "german":{
+        "fire": "feuer",
+        "bleed": "verletzung",
+        "blood": "blut",
+        "doctor": "arzt",
+        "ambulance": "krankenwagen",
+        "theft": "diebstahl",
+        "crime": "verbrechen",
+        "drowning": "ertrinken"
+    }
+}
