@@ -2,8 +2,6 @@ package com.emergency.model;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.emergency.exception.NegativeInputException;
-
 public abstract class EmergencyIncident {
     private static final AtomicInteger incidentId = new AtomicInteger(0);
     private String description;

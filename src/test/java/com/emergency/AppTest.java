@@ -12,9 +12,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.emergency.controller.EmergencyCliController;
-
-
 public class AppTest {
 
     private final InputStream originalSystemIn = System.in;
@@ -42,6 +39,23 @@ public class AppTest {
         assertDoesNotThrow(() -> App.main(new String[]{}));
 
         String capturedOutput = outputStreamCaptor.toString();
+
+        assertTrue(capturedOutput.contains("[DISPATCH - MEDICAL] Paramedics deployed. Patients: 2"),
+                "The output did not contain the expected medical dispatch message.");
+    }
+
+   @Test
+    public void shouldProcessMultipleEmergencyAndExit() {
+        String simulatedUserInput = "fire and bleed\nfalse\n2\nexit\n";
+        
+        System.setIn(new ByteArrayInputStream(simulatedUserInput.getBytes()));
+
+        assertDoesNotThrow(() -> App.main(new String[]{}));
+
+        String capturedOutput = outputStreamCaptor.toString();
+
+        assertTrue(capturedOutput.contains("[DISPATCH - FIRE] Routing engines. Hazmat: false"),
+                "The output did not contain the expected fire dispatch message.");
 
         assertTrue(capturedOutput.contains("[DISPATCH - MEDICAL] Paramedics deployed. Patients: 2"),
                 "The output did not contain the expected medical dispatch message.");

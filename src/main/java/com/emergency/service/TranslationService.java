@@ -1,20 +1,29 @@
 package com.emergency.service;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TranslationService {
 
+    private static final Logger logger = LoggerFactory.getLogger(TranslationService.class);
+
     private final Map<String, String> translationMap = new LinkedHashMap<>();
 
     public TranslationService(String filePath) throws Exception{
-        this(new FileInputStream(filePath));
+
+        File file = new File(filePath);
+        logger.info(file.getAbsolutePath());
+        this(new FileInputStream(file));
     }
 
     public TranslationService(InputStream jsonStream) throws Exception {

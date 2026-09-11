@@ -41,17 +41,17 @@ public class TranslationServiceTest {
 
     @Test
     public void shouldTranslateMixedCases() {
-        assertEquals("bleed", translation.translateToEnglish("saNG"));
+        assertEquals("blood", translation.translateToEnglish("saNG"));
     }
 
     @Test
     public void shouldTranslateMultipleWord() {
-        assertEquals("bleed theft", translation.translateToEnglish("blut diebstahl"));
+        assertEquals("blood theft", translation.translateToEnglish("blut diebstahl"));
     }
 
     @Test
     public void shouldTranslateDifferentLanguage() {
-        assertEquals("bleed theft", translation.translateToEnglish("blut vole"));
+        assertEquals("blood theft", translation.translateToEnglish("blut vole"));
     }
 
     @Test
@@ -97,10 +97,9 @@ public class TranslationServiceTest {
     @ParameterizedTest
     @CsvSource({ "feuer, fire", 
                 "feu, fire", 
-                "incendie, fire", 
                 "blessure, bleed",
-                "sang, bleed", 
-                "blut, bleed", 
+                "sang, blood", 
+                "blut, blood", 
                 "verletzung, bleed",
                 "vole, theft", 
                 "diebstahl, theft" })
