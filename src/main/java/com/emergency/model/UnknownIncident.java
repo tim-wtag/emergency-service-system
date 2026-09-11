@@ -12,4 +12,8 @@ public class UnknownIncident extends EmergencyIncident {
         return prankCall;
     }
 
+    public void setPrankCall(boolean prankCall){
+        this.prankCall = prankCall;
+    }
+
 }

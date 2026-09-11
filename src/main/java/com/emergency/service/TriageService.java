@@ -1,5 +1,8 @@
 package com.emergency.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardIncident;
 import com.emergency.model.EmergencyIncident;
@@ -10,58 +13,41 @@ import com.emergency.model.PoliceIncident;
 import com.emergency.model.UnknownIncident;
 
 public class TriageService {
-    private boolean addIncident(EmergencyIncident[] incidents, EmergencyIncident incident, Integer i) {
+    private boolean addIncident(List<EmergencyIncident> incidents, EmergencyIncident incident) {
         for (EmergencyIncident inc : incidents) {
-            if (inc != null && inc.getType().equals(incident.getType())) {
+            if (inc.getType().equals(incident.getType())) {
                 return false;
             }
         }
-        incidents[i] = incident;
+        
+        incidents.add(incident);
         return true;
     }
 
-    public EmergencyIncident[] parse(String input) {
+    public List<EmergencyIncident> parse(String input) {
         if (input == null || input.trim().isEmpty()) {
             throw new EmptyAlertException("Cannot triage empty alert.");
         }
 
-        EmergencyIncident[] incidents = new EmergencyIncident[EmergencyKeyword.values().length + 1];
-
-        Integer i = 0;
+        List<EmergencyIncident> incidents = new ArrayList<>();
 
         for (EmergencyKeyword keyword : EmergencyKeyword.values()) {
             for (String keywords : keyword.getKeyword()) {
                 if (input.contains(keywords)) {
                     switch (keyword) {
-                        case FIRE_KEYWORD -> {
-                            if (addIncident(incidents, new FireIncident(input, false), i)) {
-                                i++;
-                            }
-                        }
-                        case MEDICAL_KEYWORD -> {
-                            if (addIncident(incidents, new MedicalIncident(input, 0), i)) {
-                                i++;
-                            }
-                        }
-                        case POLICE_KEYWORD -> {
-                            if (addIncident(incidents, new PoliceIncident(input, false), i)) {
-                                i++;
-                            }
-                        }
-                        case COASTAL_KEYWORD -> {
-                            if (addIncident(incidents, new CoastGuardIncident(input, false), i)) {
-                                i++;
-                            }
-                        }
+                        case FIRE_KEYWORD -> addIncident(incidents, new FireIncident(input, false));
+                        case MEDICAL_KEYWORD -> addIncident(incidents, new MedicalIncident(input, 0));
+                        case POLICE_KEYWORD -> addIncident(incidents, new PoliceIncident(input, false));
+                        case COASTAL_KEYWORD -> addIncident(incidents, new CoastGuardIncident(input, false));
                     }
-
                 }
             }
         }
 
-        if (incidents[0] == null) {
-            incidents[0] = new UnknownIncident(input, false);
+        if (incidents.isEmpty()) {
+            incidents.add(new UnknownIncident(input, false));
         }
+        
         return incidents;
     }
 
