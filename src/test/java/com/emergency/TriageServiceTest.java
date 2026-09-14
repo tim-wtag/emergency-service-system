@@ -88,6 +88,17 @@ public class TriageServiceTest {
         assertInstanceOf(PoliceIncident.class, incidents.get(2));
     }
 
+       @Test
+    public void shouldCreateMultipleIncidentsFireBlood() {
+        List<EmergencyIncident> incidents = triage.parse("il y a un fire chez moi et il y a du blood");
+        
+        assertEquals(2, incidents.size(), "Should not add duplicate incident types");
+        
+        assertInstanceOf(FireIncident.class, incidents.get(0));
+        assertInstanceOf(MedicalIncident.class, incidents.get(1));
+        //assertInstanceOf(PoliceIncident.class, incidents.get(2));
+    }
+
     @Test
     public void shouldCreateAllIncidents() {
         List<EmergencyIncident> incidents = triage.parse("fire ambulance doctor crime theft drowning bleed");
