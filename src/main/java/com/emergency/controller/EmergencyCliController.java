@@ -230,7 +230,6 @@ public class EmergencyCliController {
             } catch (EmptyAlertException e) {
                 logger.error("", e);
             }
-            //break;
 
         }
         scanner.close();
