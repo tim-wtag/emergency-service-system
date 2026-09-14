@@ -34,6 +34,7 @@ public class EmergencyInputHelper {
         while (true) {
             try {
                 int patientNum = scanner.nextInt();
+                scanner.nextLine();
                 if (patientNum < 0) {
                     throw new NegativeInputException("");
                 }
