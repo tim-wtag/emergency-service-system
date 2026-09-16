@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardIncident;
 import com.emergency.model.EmergencyIncident;
 import com.emergency.model.FireIncident;
@@ -37,7 +36,7 @@ public class EmergencyCliController {
         try {
             translationService = new TranslationService("src/main/resources/dictionary.json");
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("", e);
         }
         triageService = new TriageService();
         dispatchRouter = new DispatchRouter();
@@ -77,13 +76,13 @@ public class EmergencyCliController {
     public void displayActive() {
         logger.info("ACTIVE INCIDENTS: ");
         masterIncidentLog.values().stream().filter(i -> i.getStatus() != IncidentStatus.RESOLVED)
-                .forEach(i -> logger.info("Active Incident:[ID: {}], {}", i.getId(), i.getDescription(),
+                .forEach(i -> logger.info("Active Incident:[ID: {}], {}, {}", i.getId(), i.getDescription(),
                         i.getType()));
     }
 
     private void handleResolved(Scanner scanner) {
         while (true) {
-            System.out.print("Please enter the ID of the incident to resolve (or type 'exit' to cancel): ");
+            logger.info("Please enter the ID of the incident to resolve (or type 'exit' to cancel): ");
             String idText = scanner.nextLine().trim();
 
             if (idText.equalsIgnoreCase("exit")) {
@@ -123,6 +122,7 @@ public class EmergencyCliController {
 
             } catch (NumberFormatException e) {
                 logger.info("Invalid format. The ID must be a number.");
+                logger.error("", e);
             }
         }
     }
@@ -131,7 +131,7 @@ public class EmergencyCliController {
         logger.info("RESOLVED INCIDENTS: ");
         masterIncidentLog.values().stream()
                 .filter(i -> i.getStatus() == IncidentStatus.RESOLVED)
-                .forEach(i -> logger.info("Resolved Incident:[ID: {}], {}, {}", 
+                .forEach(i -> logger.info("Resolved Incident:[ID: {}], {}, {}",
                         i.getId(), i.getDescription(), i.getType()));
     }
 
@@ -141,96 +141,113 @@ public class EmergencyCliController {
         }
     }
 
-    public void execution() {
+    private boolean processCommand(String input, Scanner scanner) {
+        switch (input.toLowerCase()) {
+            case "status" -> {
+                displayStatus();
+                return true;
+            }
+            case "active" -> {
+                displayActive();
+                return true;
+            }
+            case "resolve" -> {
+                handleResolved(scanner);
+                displayResolved();
+                return true;
+            }
+            case "exit" -> {
+                handleShutDown();
+                return true;
+            }
+            default -> {
+                return false;
+            }
+        }
+    }
 
+    private void processEmergencyAlert(String input, Scanner scanner) {
+        String translated = translationService.translateToEnglish(input);
+        logger.info("Translated input: {}", translated);
+
+        List<EmergencyIncident> incidents = triageService.parse(translated);
+
+        for (EmergencyIncident incident : incidents) {
+            if (incident == null) {
+                continue;
+            }
+
+            processIncidentDetails(incident, scanner);
+            dispatchIncident(incident);
+        }
+    }
+
+    private void processIncidentDetails(EmergencyIncident incident, Scanner scanner) {
+        switch (incident.getType()) {
+            case FIRE -> {
+                logger.info("Are there any hazardous materials? ");
+                boolean hazmatInvolved = helper.askTrueOrFalseQuestions(scanner);
+                ((FireIncident) incident).setHazmatInvolved(hazmatInvolved);
+            }
+            case MEDICAL -> {
+                logger.info("How many patients are injured? ");
+                int patientCount = helper.askForNumber(scanner);
+                ((MedicalIncident) incident).setPatientCount(patientCount);
+            }
+            case POLICE -> {
+                logger.info("Are there any weapon involved? ");
+                boolean weaponInvolved = helper.askTrueOrFalseQuestions(scanner);
+                ((PoliceIncident) incident).setWeaponInvolved(weaponInvolved);
+            }
+            case COASTAL -> {
+                logger.info("Do we have people in distress? ");
+                boolean peopleInDistress = helper.askTrueOrFalseQuestions(scanner);
+                ((CoastGuardIncident) incident).setPeopleInDistress(peopleInDistress);
+            }
+            case UNKNOWN -> {
+                logger.info("Is this a prank call? ");
+                boolean prankCall = helper.askTrueOrFalseQuestions(scanner);
+                ((UnknownIncident) incident).setPrankCall(prankCall);
+
+                if (prankCall) {
+                    incident.setStatus(IncidentStatus.RESOLVED);
+                    logger.info("Prank call detected. Incident marked as RESOLVED");
+                } else {
+                    incident.setStatus(IncidentStatus.PENDING);
+                }
+            }
+        }
+    }
+
+    private void dispatchIncident(EmergencyIncident incident) {
+        recordIncidentStat(incident.getType());
+
+        masterIncidentLog.put(incident.getId(), incident);
+        logger.info("masterlog size {}", masterIncidentLog.size());
+
+        dispatchRouter.route(incident);
+    }
+
+    public void execution() {
         Scanner scanner = new Scanner(System.in);
         boolean exec = true;
         String input;
-        String translated = "";
+
         while (exec) {
-            System.out.print("Please enter your emergency description (or type exit to quit): ");
+            logger.info("Please enter your emergency description (or type exit to quit)");
             input = scanner.nextLine();
 
             try {
-
-                boolean command = true;
-
-                switch (input) {
-                    case "status" -> displayStatus();
-                    case "active" -> displayActive();
-                    case "resolve" -> {
-                        handleResolved(scanner);
-                        displayResolved();
-                    }
-                    case "exit" -> {
+                if (processCommand(input, scanner)) {
+                    if ("exit".equalsIgnoreCase(input)) {
                         exec = false;
-                        handleShutDown();
                     }
-                    default -> command = false;
-                }
-
-                if (command) {
                     continue;
                 }
-
-                translated = translationService.translateToEnglish(input);
-                logger.info(translated);
-
-                List<EmergencyIncident> incidents = triageService.parse(translated);
-                for (EmergencyIncident incident : incidents) {
-                    if (incident == null) {
-                        continue;
-                    }
-                    incident = switch (incident.getType()) {
-                        case FIRE -> {
-                            logger.info("Are there any hazardous materials? ");
-                            boolean hazmatInvolved = helper.askTrueOrFalseQuestions(scanner);
-                            ((FireIncident) incident).setHazmatInvolved(hazmatInvolved);
-                            yield incident;
-                        }
-                        case MEDICAL -> {
-                            logger.info("How many patients are injured? ");
-                            int patientCount = helper.askForNumber(scanner);
-                            ((MedicalIncident) incident).setPatientCount(patientCount);
-                            yield incident;
-                        }
-                        case POLICE -> {
-                            logger.info("Are there any weapon involved? ");
-                            boolean weaponInvolved = helper.askTrueOrFalseQuestions(scanner);
-                            ((PoliceIncident) incident).setWeaponInvolved(weaponInvolved);
-                            yield incident;
-                        }
-                        case COASTAL -> {
-                            logger.info("Do we have people in distress? ");
-                            boolean peopleInDistress = helper.askTrueOrFalseQuestions(scanner);
-                            ((CoastGuardIncident) incident).setPeopleInDistress(peopleInDistress);
-                            yield incident;
-                        }
-                        case UNKNOWN -> {
-                            logger.info("Is this a prank call? ");
-                            boolean prankCall = helper.askTrueOrFalseQuestions(scanner);
-                            ((UnknownIncident) incident).setPrankCall(prankCall);
-                            if (prankCall) {
-                                incident.setStatus(IncidentStatus.RESOLVED);
-                                logger.info("Prank call detected. Incident marked as RESOLVED");
-                            } else {
-                                incident.setStatus(IncidentStatus.PENDING);
-                            }
-                            yield incident;
-                        }
-                        default -> incident;
-                    };
-
-                    recordIncidentStat(incident.getType());
-
-                    masterIncidentLog.put(incident.getId(), incident);
-                    logger.info("masterlog size {}", masterIncidentLog.size());
-                    dispatchRouter.route(incident);
-                }
-            } catch (EmptyAlertException e) {
-                logger.error("", e);
+                processEmergencyAlert(input, scanner);
+            } catch (Exception e) {
+                logger.error("Alert was empty or invalid", e);
             }
-
         }
         scanner.close();
     }

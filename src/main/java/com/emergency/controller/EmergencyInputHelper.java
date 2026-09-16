@@ -16,14 +16,18 @@ public class EmergencyInputHelper {
         while (true) {
             try {
                 String inputA = scanner.nextLine();
-                boolean inputB = switch (inputA.toLowerCase()) {
-                    case "yes", "true", "y" -> true;
-                    case "no", "false", "n" -> false;
+                boolean inputB;
+
+                switch (inputA.toLowerCase()) {
+                    case "yes", "true", "y" -> inputB = true;
+                    case "no", "false", "n" -> inputB = false;
                     default -> throw new InputMismatchException();
-                };
+                }
+
                 return inputB;
             } catch (InputMismatchException e) {
                 scanner.nextLine();
+                logger.error("", e);
                 logger.warn("Wrong input, it can either true or false!");
                 logger.warn("Please input again: ");
             }
@@ -42,10 +46,12 @@ public class EmergencyInputHelper {
                 return patientNum;
             } catch (NegativeInputException e) {
                 scanner.nextLine();
+                logger.error("", e);
                 logger.warn("Wrong input as it cannot be negative, it must be a positive number!");
                 logger.warn("Please input again: ");
             } catch (InputMismatchException e) {
                 scanner.nextLine();
+                logger.error("", e);
                 logger.warn("Must type a number! ");
                 logger.warn("Please input again: ");
             }

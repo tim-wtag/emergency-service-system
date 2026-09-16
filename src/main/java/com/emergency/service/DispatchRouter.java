@@ -38,9 +38,10 @@ public class DispatchRouter {
 
                 incident.setStatus(IncidentStatus.DISPATCHED);
 
-                logger.info("Incident successfully routed and dispatched: ", incident.getId(), incident.getType());
+                logger.info("Incident successfully routed and dispatched: {} {}", incident.getId(), incident.getType());
             }
             catch(InterruptedException e){
+                logger.error("", e);
                 Thread.currentThread().interrupt();
             }
         });
@@ -54,6 +55,7 @@ public class DispatchRouter {
             }
         }
         catch(InterruptedException e){
+            logger.error("", e);
             executor.shutdownNow();
             Thread.currentThread().interrupt();
         }
