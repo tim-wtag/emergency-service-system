@@ -11,4 +11,8 @@ public class PoliceIncident extends EmergencyIncident {
     public boolean isWeaponInvolved() {
         return weaponInvolved;
     }
+
+    public void setWeaponInvolved(boolean weaponInvolved){
+        this.weaponInvolved = weaponInvolved;
+    }
 }

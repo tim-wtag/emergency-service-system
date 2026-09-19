@@ -11,4 +11,8 @@ public class MedicalIncident extends EmergencyIncident {
     public int getPatientCount() {
         return patientCount;
     }
+
+    public void setPatientCount(int patientCount){
+        this.patientCount = patientCount;
+    }
 }
