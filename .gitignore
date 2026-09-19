@@ -5,6 +5,7 @@ target/
 # Log file
 *.log
 *.DS_Store
+*.vscode
 
 # BlueJ files
 *.ctxt

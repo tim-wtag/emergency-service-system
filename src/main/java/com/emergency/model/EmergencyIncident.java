@@ -9,7 +9,7 @@ public abstract class EmergencyIncident {
     private IncidentStatus status = IncidentStatus.PENDING;
     private int id;
 
-    public EmergencyIncident(String description, IncidentType type) {
+    protected EmergencyIncident(String description, IncidentType type) {
         this.description = description;
         this.type = type;
         this.id = incidentId.getAndIncrement();

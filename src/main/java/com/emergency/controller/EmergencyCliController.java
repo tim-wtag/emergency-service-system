@@ -234,7 +234,12 @@ public class EmergencyCliController {
         String input;
 
         while (exec) {
-            logger.info("Please enter your emergency description (or type exit to quit)");
+            logger.info("Please enter your emergency description (or type \"exit\" to quit)");
+            logger.info("Or manage incidents using the following keywords: \"status\", \"active\", \"resolve\", \"exit\".");
+            logger.info("status: to display all incidents and their respective status");
+            logger.info("active: to display all active incidents");
+            logger.info("resolve: to set a specific incident from any status to active");
+            logger.info("exit: to quit");
             input = scanner.nextLine();
 
             try {
