@@ -2,7 +2,7 @@ package com.emergency.model;
 
 public enum EmergencyKeyword {
     FIRE_KEYWORD("fire"),
-    MEDICAL_KEYWORD("bleed", "doctor", "ambulance"),
+    MEDICAL_KEYWORD("bleed", "doctor", "ambulance", "blood"),
     POLICE_KEYWORD("crime", "theft"),
     COASTAL_KEYWORD("drowning");
 
