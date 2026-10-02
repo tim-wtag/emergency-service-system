@@ -1,0 +1,21 @@
+2026-09-25 02:16:02.371898+04:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "T_INCIDENT" not found (this database is empty); SQL statement:
+INSERT INTO t_incident (description, reported_timestamp, status) VALUES (?, CURRENT_TIMESTAMP, ?) [42104-224]
+2026-09-25 02:17:11.935142+04:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "T_INCIDENT" not found (this database is empty); SQL statement:
+INSERT INTO t_incident (description, reported_timestamp, status) VALUES (?, CURRENT_TIMESTAMP, ?) [42104-224]
+2026-09-25 02:17:52.289812+04:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "T_INCIDENT" not found (this database is empty); SQL statement:
+SELECT status, COUNT(*) as total FROM t_incident GROUP BY status [42104-224]
+2026-09-25 02:18:24.861984+04:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "T_INCIDENT" not found (this database is empty); SQL statement:
+SELECT status FROM t_incident WHERE incident_id = ? [42104-224]
+2026-09-25 02:19:06.978977+04:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "T_INCIDENT" not found (this database is empty); SQL statement:
+SELECT status FROM t_incident WHERE incident_id = ? [42104-224]
+2026-09-25 02:19:15.190106+04:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "T_INCIDENT" not found (this database is empty); SQL statement:
+SELECT incident_id, description, status FROM t_incident WHERE status = 'resolved' [42104-224]
+2026-09-25 02:19:19.628732+04:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "T_INCIDENT" not found (this database is empty); SQL statement:
+SELECT incident_id, description, status FROM t_incident WHERE status != 'resolved' [42104-224]

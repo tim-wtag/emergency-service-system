@@ -7,14 +7,14 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.emergency.model.EmergencyIncident;
-import com.emergency.model.IncidentStatus;
+import com.emergency.model.EmergencyDispatch;
+import com.emergency.model.Status;
 
 public class DispatchRouter {
     private static final Logger logger = LoggerFactory.getLogger(DispatchRouter.class);
     private final ExecutorService executor = Executors.newFixedThreadPool(3);
 
-    public void route(EmergencyIncident incident) {
+    public void route(EmergencyDispatch incident) {
         switch (incident.getType()) {
             case FIRE -> new FireStation().dispatch(incident);
             case MEDICAL -> new AmbulanceSquad().dispatch(incident);
@@ -25,7 +25,7 @@ public class DispatchRouter {
         }
     }
 
-    public void routeAsync(EmergencyIncident incident){
+    public void routeAsync(EmergencyDispatch incident){
         if(incident == null){
             return;
         }
@@ -36,7 +36,7 @@ public class DispatchRouter {
 
                 route(incident);
 
-                incident.setStatus(IncidentStatus.DISPATCHED);
+                incident.setStatus(Status.DISPATCHED);
 
                 logger.info("Incident successfully routed and dispatched: {} {}", incident.getId(), incident.getType());
             }

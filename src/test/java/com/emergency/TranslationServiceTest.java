@@ -11,99 +11,99 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.emergency.service.TranslationService;
 
-public class TranslationServiceTest {
-    private static TranslationService translation;
+class TranslationServiceTest {
+    private TranslationService translation;
 
     @BeforeAll
-    public static void setUp() throws Exception {
+    void setUp() throws Exception {
         translation = new TranslationService("src/main/resources/dictionary.json");
     }
 
     @Test
-    public void shouldTranslateFrenchKeywordToEnglish() {
+    void shouldTranslateFrenchKeywordToEnglish() {
         assertTrue(translation.translateToEnglish("Il y a un feu chez moi").contains("fire"));
     }
 
     @Test
-    public void shouldTranslateGermanKeywordToEnglish() {
+    void shouldTranslateGermanKeywordToEnglish() {
         assertTrue(translation.translateToEnglish("feuer hier drin").contains("fire"));
     }
 
     @Test
-    public void shouldTranslateBlessureToBleed() {
+    void shouldTranslateBlessureToBleed() {
         assertEquals("bleed", translation.translateToEnglish("blessure"));
     }
 
     @Test
-    public void shouldIgnoreCapitalLetters() {
+    void shouldIgnoreCapitalLetters() {
         assertEquals("bleed", translation.translateToEnglish("VERLETZUNG"));
     }
 
     @Test
-    public void shouldTranslateMixedCases() {
+    void shouldTranslateMixedCases() {
         assertEquals("blood", translation.translateToEnglish("saNG"));
     }
 
     @Test
-    public void shouldTranslateMultipleWord() {
+    void shouldTranslateMultipleWord() {
         assertEquals("blood theft", translation.translateToEnglish("blut diebstahl"));
     }
 
     @Test
-    public void shouldTranslateDifferentLanguage() {
+    void shouldTranslateDifferentLanguage() {
         assertEquals("blood theft", translation.translateToEnglish("blut vole"));
     }
 
     @Test
-    public void shouldNotTranslateEnglishWord() {
+    void shouldNotTranslateEnglishWord() {
         assertEquals("theft", translation.translateToEnglish("theft"));
     }
 
     @Test
-    public void shouldLeaveUnknownWordUnchanged() {
+    void shouldLeaveUnknownWordUnchanged() {
         assertEquals("anyword", translation.translateToEnglish("anyword"));
     }
 
     @Test
-    public void shouldLeaveEmptyString() {
+    void shouldLeaveEmptyString() {
         assertEquals("", translation.translateToEnglish(""));
     }
 
     @Test
-    public void shouldLeaveEmptySpaces() {
+    void shouldLeaveEmptySpaces() {
         assertEquals("   ", translation.translateToEnglish("   "));
     }
 
     @Test
-    public void shouldLeaveNumbers() {
+    void shouldLeaveNumbers() {
         assertEquals("128389", translation.translateToEnglish("128389"));
     }
 
     @Test
-    public void shouldLeaveSpecialCharaters() {
+    void shouldLeaveSpecialCharaters() {
         assertEquals("!@#", translation.translateToEnglish("!@#"));
     }
 
     @Test
-    public void shouldTranslateRepeatedKeywords() {
+    void shouldTranslateRepeatedKeywords() {
         assertEquals("theft theft theft", translation.translateToEnglish("diebstahl diebstahl diebstahl"));
     }
 
     @Test
-    public void shouldThrowExceptionWhenInputIsNull() {
+    void shouldThrowExceptionWhenInputIsNull() {
         assertThrows(NullPointerException.class, () -> translation.translateToEnglish(null));
     }
 
     @ParameterizedTest
-    @CsvSource({ "feuer, fire", 
-                "feu, fire", 
-                "blessure, bleed",
-                "sang, blood", 
-                "blut, blood", 
-                "verletzung, bleed",
-                "vole, theft", 
-                "diebstahl, theft" })
-    public void shouldTranslateKeywords(String input, String expected) throws Exception {
+    @CsvSource({ "feuer, fire",
+            "feu, fire",
+            "blessure, bleed",
+            "sang, blood",
+            "blut, blood",
+            "verletzung, bleed",
+            "vole, theft",
+            "diebstahl, theft" })
+    void shouldTranslateKeywords(String input, String expected) throws Exception {
         TranslationService translationTest = new TranslationService("src/main/resources/dictionary.json");
         assertEquals(expected, translationTest.translateToEnglish(input));
     }
