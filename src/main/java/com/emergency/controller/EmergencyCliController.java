@@ -9,9 +9,9 @@ import org.slf4j.LoggerFactory;
 import com.emergency.model.CoastGuardEmergency;
 import com.emergency.model.EmergencyDispatch;
 import com.emergency.model.FireEmergency;
-import com.emergency.model.Status;
 import com.emergency.model.MedicalEmergency;
 import com.emergency.model.PoliceEmergency;
+import com.emergency.model.Status;
 import com.emergency.model.UnknownEmergency;
 import com.emergency.repository.EmergencyRepository;
 import com.emergency.repository.IncidentRepository;
@@ -22,6 +22,11 @@ import com.emergency.service.TriageService;
 public class EmergencyCliController {
 
     private static final Logger logger = LoggerFactory.getLogger(EmergencyCliController.class);
+
+    private static final String STATUS_PENDING = "pending";
+    private static final String STATUS_DISPATCHED = "dispatched";
+    private static final String STATUS_RESOLVED = "resolved";
+
     private TranslationService translationService = null;
     private final TriageService triageService;
     private final DispatchRouter dispatchRouter;
@@ -33,107 +38,204 @@ public class EmergencyCliController {
         try {
             translationService = new TranslationService("src/main/resources/dictionary.json");
         } catch (Exception e) {
-            logger.error("", e);
+            logger.error("Failed to load translation service", e);
         }
-        triageService = new TriageService();
-        dispatchRouter = new DispatchRouter();
-        helper = new EmergencyInputHelper();
+
         incidentRepository = new IncidentRepository();
         emergencyRepository = new EmergencyRepository();
 
+        triageService = new TriageService(incidentRepository, emergencyRepository);
+
+        dispatchRouter = new DispatchRouter();
+        helper = new EmergencyInputHelper();
     }
 
-    private void displayStatus() {
-        Map<String, Integer> dbCounts = incidentRepository.getStatusCounts();
-        
-        int pending = dbCounts.getOrDefault("pending", 0);
-        int dispatched = dbCounts.getOrDefault("dispatched", 0);
-        int resolved = dbCounts.getOrDefault("resolved", 0);
-        
-        int activeCount = pending + dispatched;
-        int totalCount = activeCount + resolved;
+    private void displayIncidentStatus() {
+        Map<String, Integer> incidentCounts = incidentRepository.getStatusCounts();
+        int pendingIncidents = incidentCounts.getOrDefault(STATUS_PENDING, 0);
+        int dispatchedIncidents = incidentCounts.getOrDefault(STATUS_DISPATCHED, 0);
+        int resolvedIncidents = incidentCounts.getOrDefault(STATUS_RESOLVED, 0);
+        int activeIncidents = pendingIncidents + dispatchedIncidents;
 
-        logger.info("Total Incidents : {}", totalCount);
-        logger.info("Active          : {} (Pending: {}, Dispatched: {})", activeCount, pending, dispatched);
-        logger.info("Resolved        : {}", resolved);
+        logger.info("--- PARENT INCIDENTS ---");
+        logger.info("Total   : {}", activeIncidents + resolvedIncidents);
+        logger.info("Active  : {} (Pending: {}, Dispatched: {})", activeIncidents, pendingIncidents,
+                dispatchedIncidents);
+        logger.info("Resolved: {}", resolvedIncidents);
     }
 
+    private void displayEmergencyStatus() {
+        Map<String, Integer> emergencyCounts = emergencyRepository.getStatusCounts();
+        int pendingEmergencies = emergencyCounts.getOrDefault(STATUS_PENDING, 0);
+        int dispatchedEmergencies = emergencyCounts.getOrDefault(STATUS_DISPATCHED, 0);
+        int resolvedEmergencies = emergencyCounts.getOrDefault(STATUS_RESOLVED, 0);
+        int activeEmergencies = pendingEmergencies + dispatchedEmergencies;
+
+        logger.info("--- EMERGENCY UNITS ---");
+        logger.info("Total   : {}", activeEmergencies + resolvedEmergencies);
+        logger.info("Active  : {} (Pending: {}, Dispatched: {})", activeEmergencies, pendingEmergencies,
+                dispatchedEmergencies);
+        logger.info("Resolved: {}", resolvedEmergencies);
+    }
 
     public void displayActive() {
-        logger.info("ACTIVE INCIDENTS: ");
-        
+        logger.info("--- ACTIVE PARENT INCIDENTS ---");
         List<String> activeIncidents = incidentRepository.getActiveIncidentsFormatted();
-        
         if (activeIncidents.isEmpty()) {
-            logger.info("No active incidents found.");
+            logger.info("No active parent incidents found.");
         } else {
             for (String incidentInfo : activeIncidents) {
                 logger.info(incidentInfo);
             }
         }
-    }
 
-    private void displayEmergencyStatus() {
-        Map<String, Integer> emergencyCounts = emergencyRepository.getStatusCounts();
-        
-        int pending = emergencyCounts.getOrDefault("pending", 0);
-        int dispatched = emergencyCounts.getOrDefault("dispatched", 0);
-        int resolved = emergencyCounts.getOrDefault("resolved", 0);
-        
-        int activeCount = pending + dispatched;
-        int totalCount = activeCount + resolved;
+        logger.info("--- ACTIVE EMERGENCY UNITS (Use these IDs for 'dispatch' or 'resolve') ---");
+        List<EmergencyDispatch> pendings = emergencyRepository.getPendingEmergencies();
+        List<EmergencyDispatch> dispatched = emergencyRepository.getDispatchedEmergencies();
 
-        logger.info("Total Emergencies : {}", totalCount);
-        logger.info("Active           : {} (Pending: {}, Dispatched: {})", activeCount, pending, dispatched);
-        logger.info("Resolved         : {}", resolved);
-    }
-
-    
-
-   private void handleResolved(Scanner scanner) {
-        while (true) {
-            logger.info("Please enter the ID of the incident to resolve (or type 'exit' to cancel): ");
-            String idText = scanner.nextLine().trim();
-
-            if (idText.equalsIgnoreCase("exit")) {
-                logger.info("Canceling resolve operation.");
-                return;
-            } else if (idText.isEmpty()) {
-                logger.info("Error: No ID provided. Please try again.");
-            } else {
-                try {
-                    java.util.UUID targetId = java.util.UUID.fromString(idText);
-                    
-                    String currentStatus = incidentRepository.getIncidentStatus(targetId);
-
-                    if (currentStatus == null) {
-                        logger.info("Error: No incident found with ID {}. Please try again.", targetId);
-                    } else if ("resolved".equalsIgnoreCase(currentStatus)) {
-                        logger.info("Incident ID {} has already been resolved. Please enter a different ID.", targetId);
-                    } else if (incidentRepository.markAsResolved(targetId)) {
-                        logger.info("Success: Incident ID {} has been marked as RESOLVED.", targetId);
-                        return; 
-                    } else {
-                        logger.error("Database error: Failed to update Incident ID {}.", targetId);
-                    }
-                } 
-                catch (IllegalArgumentException e) {
-                    logger.info("Invalid format. The ID must be a valid UUID (e.g., 123e4567-e89b-12d3-a456-426614174000).", e);
-                }
+        if (pendings.isEmpty() && dispatched.isEmpty()) {
+            logger.info("No active emergency units found.");
+        } else {
+            for (EmergencyDispatch e : pendings) {
+                logger.info("PENDING Unit    [ID: {}] | Desc: {}", e.getId(), e.getComment());
+            }
+            for (EmergencyDispatch e : dispatched) {
+                logger.info("DISPATCHED Unit [ID: {}] | Desc: {}", e.getId(), e.getComment());
             }
         }
     }
 
     public void displayResolved() {
-        logger.info("RESOLVED INCIDENTS: ");
+        logger.info("--- RESOLVED PARENT INCIDENTS ---");
         List<String> resolvedIncidents = incidentRepository.getResolvedIncidentsFormatted();
-        
+
         if (resolvedIncidents.isEmpty()) {
-            logger.info("No resolved incidents found.");
+            logger.info("No resolved parent incidents found.");
         } else {
             for (String incidentInfo : resolvedIncidents) {
                 logger.info(incidentInfo);
             }
+        }
+
+        logger.info("--- RESOLVED EMERGENCY UNITS ---");
+        List<EmergencyDispatch> resolvedEmergencies = emergencyRepository.getResolvedEmergencies();
+
+        if (resolvedEmergencies.isEmpty()) {
+            logger.info("No resolved emergency units found.");
+        } else {
+            for (EmergencyDispatch e : resolvedEmergencies) {
+                logger.info("RESOLVED Unit   [ID: {}] | Desc: {}", e.getId(), e.getComment());
+            }
+        }
+    }
+
+    public void displayByDepartment() {
+        logger.info("--- EMERGENCIES BY DEPARTMENT ---");
+
+        List<EmergencyDispatch> fire = emergencyRepository.getFireEmergencies();
+        List<EmergencyDispatch> medical = emergencyRepository.getMedicalEmergencies();
+        List<EmergencyDispatch> police = emergencyRepository.getPoliceEmergencies();
+        List<EmergencyDispatch> coastal = emergencyRepository.getCoastGuardEmergencies();
+        List<EmergencyDispatch> unknown = emergencyRepository.getUnknownEmergencies();
+
+        logger.info("FIRE DEPT ({} units):", fire.size());
+        fire.forEach(e -> logger.info("  -> [ID: {}] Status: {}", e.getId(), e.getStatus()));
+
+        logger.info("MEDICAL ({} units):", medical.size());
+        medical.forEach(e -> logger.info("  -> [ID: {}] Status: {}", e.getId(), e.getStatus()));
+
+        logger.info("POLICE ({} units):", police.size());
+        police.forEach(e -> logger.info("  -> [ID: {}] Status: {}", e.getId(), e.getStatus()));
+
+        logger.info("COAST GUARD ({} units):", coastal.size());
+        coastal.forEach(e -> logger.info("  -> [ID: {}] Status: {}", e.getId(), e.getStatus()));
+
+        if (!unknown.isEmpty()) {
+            logger.info("UNKNOWN ({} units):", unknown.size());
+            unknown.forEach(e -> logger.info("  -> [ID: {}] Status: {}", e.getId(), e.getStatus()));
+        }
+    }
+
+    private void handleDispatched(Scanner scanner) {
+        boolean active = true;
+        while (active) {
+            logger.info("Please enter the ID of the PENDING EMERGENCY UNIT to dispatch (or type 'exit' to cancel): ");
+            String idText = scanner.nextLine().trim();
+
+            if (idText.equalsIgnoreCase("exit")) {
+                logger.info("Canceling dispatch operation.");
+                active = false;
+            } else if (idText.isEmpty()) {
+                logger.info("Error: No ID provided. Please try again.");
+            } else {
+                active = processDispatchAttempt(idText);
+            }
+        }
+    }
+
+    private boolean processDispatchAttempt(String idText) {
+        try {
+            java.util.UUID targetId = java.util.UUID.fromString(idText);
+
+            if (emergencyRepository.markEmergencyAsDispatched(targetId)) {
+                logger.info("Success: Emergency unit {} has been marked as DISPATCHED.", targetId);
+                return false;
+            }
+
+            logger.info("Error: Could not dispatch unit. Ensure the ID is correct and active.");
+            return true;
+
+        } catch (IllegalArgumentException e) {
+            logger.info("Invalid format. The ID must be a valid UUID.", e);
+            return true;
+        }
+    }
+
+    private void handleResolved(Scanner scanner) {
+        boolean active = true;
+        while (active) {
+            logger.info("Please enter the ID of the EMERGENCY UNIT to resolve (or type 'exit' to cancel): ");
+            String idText = scanner.nextLine().trim();
+
+            if (idText.equalsIgnoreCase("exit")) {
+                logger.info("Canceling resolve operation.");
+                active = false;
+            } else if (idText.isEmpty()) {
+                logger.info("Error: No ID provided. Please try again.");
+            } else {
+                active = processResolveAttempt(idText);
+            }
+        }
+    }
+
+    private boolean processResolveAttempt(String idText) {
+        try {
+            java.util.UUID targetId = java.util.UUID.fromString(idText);
+            java.util.UUID parentIncidentId = emergencyRepository.markEmergencyAsResolved(targetId);
+
+            if (parentIncidentId == null) {
+                logger.info("Error: No active emergency found with ID {}. It may be invalid or already resolved.",
+                        targetId);
+                return true;
+            }
+
+            logger.info("Success: Emergency unit {} has been marked as RESOLVED.", targetId);
+
+            incidentRepository.syncIncidentStatus(parentIncidentId);
+            String newParentStatus = incidentRepository.getIncidentStatus(parentIncidentId);
+
+            if (STATUS_RESOLVED.equalsIgnoreCase(newParentStatus)) {
+                logger.info("All units finished. Parent Incident {} is now OFFICIALLY RESOLVED.", parentIncidentId);
+            } else if (logger.isInfoEnabled()) {
+                logger.info("Parent Incident {} remains open (Status: {}).", parentIncidentId,
+                        newParentStatus.toUpperCase());
+            }
+
+            return false;
+
+        } catch (IllegalArgumentException e) {
+            logger.info("Invalid format. The ID must be a valid UUID.", e);
+            return true;
         }
     }
 
@@ -145,17 +247,32 @@ public class EmergencyCliController {
 
     private boolean processCommand(String input, Scanner scanner) {
         switch (input.toLowerCase()) {
-            case "status" -> {
-                displayStatus();
+            case "emergency status" -> {
+                displayEmergencyStatus();
+                return true;
+            }
+            case "incident status" -> {
+                displayIncidentStatus();
                 return true;
             }
             case "active" -> {
                 displayActive();
                 return true;
             }
+            case "resolved" -> {
+                displayResolved();
+                return true;
+            }
+            case "departments" -> {
+                displayByDepartment();
+                return true;
+            }
+            case "dispatch" -> {
+                handleDispatched(scanner);
+                return true;
+            }
             case "resolve" -> {
                 handleResolved(scanner);
-                displayResolved();
                 return true;
             }
             case "exit" -> {
@@ -172,15 +289,23 @@ public class EmergencyCliController {
         String translated = translationService.translateToEnglish(input);
         logger.info("Translated input: {}", translated);
 
-        List<EmergencyDispatch> incidents = triageService.parse(translated);
+        List<EmergencyDispatch> emergencies = triageService.parseAndSave(translated);
 
-        for (EmergencyDispatch incident : incidents) {
-            if (incident == null) {
+        if (emergencies == null || emergencies.isEmpty()) {
+            logger.warn("System prevented creation of an empty incident. No emergency units generated.");
+            return;
+        }
+
+        for (EmergencyDispatch emergency : emergencies) {
+            if (emergency == null)
                 continue;
-            }
+            processIncidentDetails(emergency, scanner);
+        }
 
-            processIncidentDetails(incident, scanner);
-            dispatchRouter.route(incident);
+        for (EmergencyDispatch emergency : emergencies) {
+            if (emergency == null)
+                continue;
+            dispatchRouter.route(emergency);
         }
     }
 
@@ -213,7 +338,13 @@ public class EmergencyCliController {
 
                 if (prankCall) {
                     incident.setStatus(Status.RESOLVED);
-                    logger.info("Prank call detected. Incident marked as RESOLVED");
+
+                    emergencyRepository.markEmergencyAsResolved(incident.getId());
+                    if (incident.getParentIncident() != null) {
+                        incidentRepository.syncIncidentStatus(incident.getParentIncident().getId());
+                    }
+
+                    logger.info("Prank call detected. Incident marked as RESOLVED in the database.");
                 } else {
                     incident.setStatus(Status.PENDING);
                 }
@@ -223,27 +354,27 @@ public class EmergencyCliController {
 
     public void execution() {
         Scanner scanner = new Scanner(System.in);
-        boolean exec = true;
+        boolean active = true;
         String input;
 
-        while (exec) {
-            logger.info("Please enter your emergency description (or type \"exit\" to quit)");
-            logger.info("Or manage incidents using the following keywords: \"status\", \"active\", \"resolve\", \"exit\".");
-            logger.info("status: to display all incidents and their respective status");
-            logger.info("active: to display all active incidents");
-            logger.info("resolve: to set a specific incident from any status to active");
-            logger.info("exit: to quit");
-            input = scanner.nextLine();
+        while (active) {
+            logger.info("\n=== EMERGENCY DISPATCH SYSTEM ===");
+            logger.info("Enter an emergency description OR use a command:");
+            logger.info("VIEWS  : 'emergency status', 'incident status', 'active', 'resolved', 'departments'");
+            logger.info("ACTIONS: 'dispatch', 'resolve'");
+            logger.info("SYSTEM : 'exit'");
+
+            input = scanner.nextLine().trim();
 
             try {
-                if (processCommand(input, scanner)) {
-                    if ("exit".equalsIgnoreCase(input)) {
-                        exec = false;
-                    }
-                    continue;
+                if ("exit".equalsIgnoreCase(input)) {
+                    active = false;
                 }
-                processEmergencyAlert(input, scanner);
-            } catch (Exception e) {
+                // else if(!processCommand(input, scanner)){
+                //     processEmergencyAlert(input, scanner);
+                // }
+            } 
+            catch (Exception e) {
                 logger.error("Alert was empty or invalid", e);
             }
         }

@@ -2,9 +2,7 @@ package com.emergency.repository;
 
 import com.emergency.config.DatabaseManager;
 import com.emergency.model.EmergencyDispatch;
-import com.emergency.model.EmergencyIncident;
 import com.emergency.model.EmergencyType;
-import com.emergency.model.FireEmergency;
 import com.emergency.model.Status;
 
 import org.slf4j.Logger;
@@ -23,28 +21,27 @@ import java.util.UUID;
 public class EmergencyRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(EmergencyRepository.class);
-    EmergencyDispatch emergencyDispatch;
 
     public EmergencyDispatch save(EmergencyDispatch emergency) {
-        String sql = "INSERT INTO t_emergency_dispatches (emergency_id, incident_id, emergency_name, status, dispatched_timestamp) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)";
+        String sql = "INSERT INTO t_emergency_dispatches (emergency_id, emergency_name, incident_type, emergency_status, dispatched_timestamp, incident_id) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)";
 
         try (Connection conn = DatabaseManager.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setObject(1, emergency.getId());
-
-            if (emergency.getParentIncident() != null) {
-                pstmt.setObject(2, emergency.getParentIncident().getId());
-            } else {
-                pstmt.setObject(2, null);
-            }
-
-            pstmt.setString(3, emergency.getComment());
+            pstmt.setString(2, emergency.getComment());
+            
+            pstmt.setString(3, emergency.getType().name().toLowerCase()); 
+            
             pstmt.setString(4, emergency.getStatus().name().toLowerCase());
 
-            int affectedRows = pstmt.executeUpdate();
+            if (emergency.getParentIncident() != null) {
+                pstmt.setObject(5, emergency.getParentIncident().getId());
+            } else {
+                pstmt.setObject(5, null);
+            }
 
-            if (affectedRows == 0) {
+            if (pstmt.executeUpdate() == 0) {
                 logger.warn("Saving emergency dispatch failed, no rows affected.");
             }
 
@@ -55,61 +52,14 @@ public class EmergencyRepository {
         return emergency;
     }
 
-   public List<EmergencyDispatch> findAll() {
-    List<EmergencyDispatch> emergencies = new ArrayList<>();
-    String sql = "SELECT emergency_id, incident_id, emergency_name, status FROM t_emergency_dispatches";
-
-    try (Connection conn = DatabaseManager.getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql);
-         ResultSet rs = pstmt.executeQuery()) {
-
-        while (rs.next()) {
-            // 1. Extract raw data from the ResultSet
-            UUID emergencyId = rs.getObject("emergency_id", UUID.class);
-            UUID incidentId = rs.getObject("incident_id", UUID.class);
-            String emergencyName = rs.getString("emergency_name");
-            String statusString = rs.getString("status");
-
-            // 2. Instantiate the dispatch object (Note: see 'abstract' warning above)
-            // Assuming you remove 'abstract' from the class, or use a concrete subclass here.
-            EmergencyDispatch dispatch = new EmergencyDispatch(emergencyName, null); 
-            
-            // 3. Set the fields
-            dispatch.setId(emergencyId);
-            dispatch.setStatus(Status.valueOf(statusString.toUpperCase()));
-            
-            // 4. Handle the foreign key relationship
-            if (incidentId != null) {
-                // Option A: Just set the ID to avoid querying the database again
-                EmergencyIncident incident = new EmergencyIncident("Loaded from dispatch");
-                incident.setId(incidentId);
-                dispatch.setParentIncident(incident);
-                
-                // Option B: If you need the full incident details, you would call 
-                // incidentRepository.findById(incidentId) here instead.
-            }
-
-            // 5. Add to the list
-            emergencies.add(dispatch);
-        }
-
-    } catch (SQLException e) {
-        logger.error("Error retrieving emergency dispatches from the database:", e);
-    }
-
-    return emergencies;
-}
-
     public boolean markEmergencyAsDispatched(UUID emergencyId) {
         String sql = "UPDATE t_emergency_dispatches SET emergency_status = 'dispatched', dispatched_timestamp = CURRENT_TIMESTAMP WHERE emergency_id = ?";
 
         try (Connection conn = DatabaseManager.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setObject(1, emergencyId);
-            int affectedRows = pstmt.executeUpdate();
-
-            return affectedRows > 0;
+            return pstmt.executeUpdate() > 0;
 
         } catch (SQLException e) {
             logger.error("Error updating emergency status to dispatched for ID: {}", emergencyId, e);
@@ -147,7 +97,6 @@ public class EmergencyRepository {
 
     public Map<String, Integer> getStatusCounts() {
         Map<String, Integer> statusCounts = new HashMap<>();
-        // Querying the dispatches table instead of the incident table
         String sql = "SELECT status, COUNT(*) as total FROM t_emergency_dispatches GROUP BY status";
 
         try (Connection conn = DatabaseManager.getConnection();
@@ -156,10 +105,8 @@ public class EmergencyRepository {
 
             while (rs.next()) {
                 String status = rs.getString("status");
-                int count = rs.getInt("total");
-
                 if (status != null) {
-                    statusCounts.put(status.toLowerCase(), count);
+                    statusCounts.put(status.toLowerCase(), rs.getInt("total"));
                 }
             }
         } catch (SQLException e) {
@@ -169,80 +116,88 @@ public class EmergencyRepository {
         return statusCounts;
     }
 
-   public List<EmergencyDispatch> getPendingEmergencies() {
-        List<EmergencyDispatch> emergencies = new ArrayList<>();
-        String sql = "SELECT emergency_id, emergency_name FROM t_emergency_dispatches WHERE status = 'pending'";
-
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-
-            while (rs.next()) {
-                emergencyDispatch = new EmergencyDispatch(null, null);
-                
-                // Use the setter to apply the name/description
-                emergencyDispatch.setComment(rs.getString("emergency_name"));
-                
-                emergencyDispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
-                emergencyDispatch.setStatus(Status.PENDING); 
-
-                emergencies.add(emergencyDispatch);
-            }
-        } catch (SQLException e) {
-            logger.error("Error retrieving pending emergencies:", e);
-        }
-
-        return emergencies;
+    public List<EmergencyDispatch> getPendingEmergencies() {
+        return fetchEmergenciesByStatus("pending", Status.PENDING);
     }
 
     public List<EmergencyDispatch> getDispatchedEmergencies() {
+        return fetchEmergenciesByStatus("dispatched", Status.DISPATCHED);
+    }
+
+    public List<EmergencyDispatch> getResolvedEmergencies() {
+        return fetchEmergenciesByStatus("resolved", Status.RESOLVED);
+    }
+
+    public List<EmergencyDispatch> getFireEmergencies() {
+        return fetchEmergenciesByType("fire", EmergencyType.FIRE);
+    }
+
+    public List<EmergencyDispatch> getMedicalEmergencies() {
+        return fetchEmergenciesByType("medical", EmergencyType.MEDICAL);
+    }
+
+    public List<EmergencyDispatch> getPoliceEmergencies() {
+        return fetchEmergenciesByType("police", EmergencyType.POLICE);
+    }
+
+    public List<EmergencyDispatch> getCoastGuardEmergencies() {
+        return fetchEmergenciesByType("coastal", EmergencyType.COASTAL);
+    }
+
+    public List<EmergencyDispatch> getUnknownEmergencies() {
+        return fetchEmergenciesByType("unknown", EmergencyType.UNKNOWN);
+    }
+
+    private List<EmergencyDispatch> fetchEmergenciesByStatus(String dbStatus, Status forcedStatus) {
         List<EmergencyDispatch> emergencies = new ArrayList<>();
-        
-        String sql = "SELECT emergency_id, emergency_name FROM t_emergency_dispatches WHERE status = 'dispatched'";
+        String sql = "SELECT emergency_id, emergency_name FROM t_emergency_dispatches WHERE status = ?";
 
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            while (rs.next()) {
-        
-                EmergencyDispatch dispatch = new EmergencyDispatch(null, null);
-                
-                dispatch.setComment(rs.getString("emergency_name"));
-                dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
-                
-                dispatch.setStatus(Status.DISPATCHED); 
+            pstmt.setString(1, dbStatus);
 
-                emergencies.add(dispatch);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    EmergencyDispatch dispatch = new EmergencyDispatch(null, null);
+                    dispatch.setComment(rs.getString("emergency_name"));
+                    dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
+                    dispatch.setStatus(forcedStatus);
+                    emergencies.add(dispatch);
+                }
             }
         } catch (SQLException e) {
-            logger.error("Error retrieving dispatched emergencies:", e);
+            logger.error("Error retrieving {} emergencies:", dbStatus, e);
         }
 
         return emergencies;
     }
 
-    public List<EmergencyDispatch> getResolvedEmergencies() {
+    private List<EmergencyDispatch> fetchEmergenciesByType(String dbType, EmergencyType forcedType) {
         List<EmergencyDispatch> emergencies = new ArrayList<>();
-        
-        String sql = "SELECT emergency_id, emergency_name FROM t_emergency_dispatches WHERE status = 'resolved'";
+        String sql = "SELECT emergency_id, emergency_name, status FROM t_emergency_dispatches WHERE type = ?";
 
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            while (rs.next()) {
-                EmergencyDispatch dispatch = new EmergencyDispatch(null, null);
-                
-                dispatch.setComment(rs.getString("emergency_name"));
-                dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
-                
-                dispatch.setStatus(Status.RESOLVED); 
+            pstmt.setString(1, dbType);
 
-                emergencies.add(dispatch);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    EmergencyDispatch dispatch = new EmergencyDispatch(forcedType, null);
+                    dispatch.setComment(rs.getString("emergency_name"));
+                    dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
+
+                    String dbStatus = rs.getString("status");
+                    if (dbStatus != null) {
+                        dispatch.setStatus(Status.valueOf(dbStatus.toUpperCase()));
+                    }
+
+                    emergencies.add(dispatch);
+                }
             }
         } catch (SQLException e) {
-            logger.error("Error retrieving dispatched emergencies:", e);
+            logger.error("Error retrieving {} emergencies:", dbType, e);
         }
 
         return emergencies;
