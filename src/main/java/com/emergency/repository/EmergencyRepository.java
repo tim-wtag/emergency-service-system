@@ -1,119 +1,57 @@
 package com.emergency.repository;
 
-import com.emergency.config.DatabaseManager;
 import com.emergency.model.EmergencyDispatch;
 import com.emergency.model.EmergencyType;
 import com.emergency.model.Status;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class EmergencyRepository {
+public class EmergencyRepository extends AbstractRepository<EmergencyDispatch> {
 
-    private static final Logger logger = LoggerFactory.getLogger(EmergencyRepository.class);
 
+    @Override
     public EmergencyDispatch save(EmergencyDispatch emergency) {
-        String sql = "INSERT INTO t_emergency_dispatches (emergency_id, emergency_name, incident_type, emergency_status, dispatched_timestamp, incident_id) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)";
-
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setObject(1, emergency.getId());
-            pstmt.setString(2, emergency.getComment());
-            
-            pstmt.setString(3, emergency.getType().name().toLowerCase()); 
-            
-            pstmt.setString(4, emergency.getStatus().name().toLowerCase());
-
-            if (emergency.getParentIncident() != null) {
-                pstmt.setObject(5, emergency.getParentIncident().getId());
-            } else {
-                pstmt.setObject(5, null);
-            }
-
-            if (pstmt.executeUpdate() == 0) {
-                logger.warn("Saving emergency dispatch failed, no rows affected.");
-            }
-
-        } catch (SQLException e) {
-            logger.error("Error saving dispatch to the database:", e);
-        }
+        String sql = "INSERT INTO t_emergency_dispatches (emergency_id, comment, emergency_type, emergency_status, incident_id) VALUES (?, ?, ?, ?, ?)";
+        this.executeInsertSQL(sql,
+                emergency.getId(), emergency.getComment(), emergency.getType().name().toLowerCase(),
+                emergency.getStatus().name().toLowerCase(), emergency.getParentIncident().getId());
 
         return emergency;
     }
 
-    public boolean markEmergencyAsDispatched(UUID emergencyId) {
-        String sql = "UPDATE t_emergency_dispatches SET emergency_status = 'dispatched', dispatched_timestamp = CURRENT_TIMESTAMP WHERE emergency_id = ?";
-
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setObject(1, emergencyId);
-            return pstmt.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            logger.error("Error updating emergency status to dispatched for ID: {}", emergencyId, e);
-            return false;
-        }
+public boolean markEmergencyAsDispatched(UUID emergencyId) {
+        String sql = "UPDATE t_emergency_dispatches SET emergency_status = 'dispatched', dispatched_time = CURRENT_TIMESTAMP WHERE emergency_id = ?";
+        
+        int rowsUpdated = executeInsertSQL(sql, emergencyId);
+        return rowsUpdated > 0;
     }
 
-    public java.util.UUID markEmergencyAsResolved(java.util.UUID emergencyId) {
+    public UUID markEmergencyAsResolved(UUID emergencyId) {
         String resolveDispatchSql = "UPDATE t_emergency_dispatches SET emergency_status = 'resolved' WHERE emergency_id = ?";
         String getIncidentIdSql = "SELECT incident_id FROM t_emergency_dispatches WHERE emergency_id = ?";
 
-        try (Connection conn = DatabaseManager.getConnection()) {
-
-            try (PreparedStatement dispatchStmt = conn.prepareStatement(resolveDispatchSql)) {
-                dispatchStmt.setObject(1, emergencyId);
-                if (dispatchStmt.executeUpdate() == 0) {
-                    return null;
-                }
-            }
-
-            try (PreparedStatement getParentStmt = conn.prepareStatement(getIncidentIdSql)) {
-                getParentStmt.setObject(1, emergencyId);
-                try (ResultSet rs = getParentStmt.executeQuery()) {
-                    if (rs.next()) {
-                        return rs.getObject("incident_id", java.util.UUID.class);
-                    }
-                }
-            }
-
-        } catch (SQLException e) {
-            logger.error("Database error during emergency resolution for ID: {}", emergencyId, e);
+        int rowsUpdated = executeInsertSQL(resolveDispatchSql, emergencyId);
+        if (rowsUpdated == 0) {
+            return null;
         }
-        return null;
+
+        return executeQuery(getIncidentIdSql, rs -> {
+            if (rs.next()) {
+                return rs.getObject("incident_id", UUID.class);
+            }
+            return null;
+        }, emergencyId);
     }
 
-    public Map<String, Integer> getStatusCounts() {
-        Map<String, Integer> statusCounts = new HashMap<>();
-        String sql = "SELECT status, COUNT(*) as total FROM t_emergency_dispatches GROUP BY status";
+    @Override
+    protected String getTableName() {
+        return "t_emergency_dispatches";
+    }
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-
-            while (rs.next()) {
-                String status = rs.getString("status");
-                if (status != null) {
-                    statusCounts.put(status.toLowerCase(), rs.getInt("total"));
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error retrieving dispatch status counts from the database:", e);
-        }
-
-        return statusCounts;
+    public Map<String, Integer> getEmergencyStatusCounts() {
+        return getStatusCounts("emergency_status");
     }
 
     public List<EmergencyDispatch> getPendingEmergencies() {
@@ -149,57 +87,43 @@ public class EmergencyRepository {
     }
 
     private List<EmergencyDispatch> fetchEmergenciesByStatus(String dbStatus, Status forcedStatus) {
+    String sql = "SELECT emergency_id, emergency_name FROM t_emergency_dispatches WHERE status = ?";
+
+    List<EmergencyDispatch> result = executeQuery(sql, rs -> {
         List<EmergencyDispatch> emergencies = new ArrayList<>();
-        String sql = "SELECT emergency_id, emergency_name FROM t_emergency_dispatches WHERE status = ?";
-
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, dbStatus);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    EmergencyDispatch dispatch = new EmergencyDispatch(null, null);
-                    dispatch.setComment(rs.getString("emergency_name"));
-                    dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
-                    dispatch.setStatus(forcedStatus);
-                    emergencies.add(dispatch);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error retrieving {} emergencies:", dbStatus, e);
+        while (rs.next()) {
+            EmergencyDispatch dispatch = new EmergencyDispatch(null, null);
+            dispatch.setComment(rs.getString("emergency_name"));
+            dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
+            dispatch.setStatus(forcedStatus);
+            emergencies.add(dispatch);
         }
-
         return emergencies;
-    }
+    }, dbStatus);
 
-    private List<EmergencyDispatch> fetchEmergenciesByType(String dbType, EmergencyType forcedType) {
+    return result != null ? result : new ArrayList<>();
+}
+
+private List<EmergencyDispatch> fetchEmergenciesByType(String dbType, EmergencyType forcedType) {
+    String sql = "SELECT emergency_id, emergency_name, status FROM t_emergency_dispatches WHERE type = ?";
+
+    List<EmergencyDispatch> result = executeQuery(sql, rs -> {
         List<EmergencyDispatch> emergencies = new ArrayList<>();
-        String sql = "SELECT emergency_id, emergency_name, status FROM t_emergency_dispatches WHERE type = ?";
+        while (rs.next()) {
+            EmergencyDispatch dispatch = new EmergencyDispatch(forcedType, null);
+            dispatch.setComment(rs.getString("emergency_name"));
+            dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, dbType);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    EmergencyDispatch dispatch = new EmergencyDispatch(forcedType, null);
-                    dispatch.setComment(rs.getString("emergency_name"));
-                    dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
-
-                    String dbStatus = rs.getString("status");
-                    if (dbStatus != null) {
-                        dispatch.setStatus(Status.valueOf(dbStatus.toUpperCase()));
-                    }
-
-                    emergencies.add(dispatch);
-                }
+            String statusValue = rs.getString("status");
+            if (statusValue != null) {
+                dispatch.setStatus(Status.valueOf(statusValue.toUpperCase()));
             }
-        } catch (SQLException e) {
-            logger.error("Error retrieving {} emergencies:", dbType, e);
-        }
 
+            emergencies.add(dispatch);
+        }
         return emergencies;
-    }
+    }, dbType);
+
+    return result != null ? result : new ArrayList<>();
+}
 }

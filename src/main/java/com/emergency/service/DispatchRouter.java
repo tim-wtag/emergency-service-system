@@ -23,7 +23,8 @@ public class DispatchRouter {
             default -> throw new IllegalStateException("Unexpected type: " + emergency.getType());
         }
     }
-public void routeAsync(EmergencyDispatch incident) {
+
+    public void routeAsync(EmergencyDispatch incident) {
         if (incident == null) {
             return;
         }
@@ -31,10 +32,12 @@ public void routeAsync(EmergencyDispatch incident) {
         executor.submit(() -> {
             try {
                 Thread.sleep(3000);
+
                 route(incident);
+
                 logger.info("Incident successfully routed and dispatched: {} {}", incident.getId(), incident.getType());
             } catch (InterruptedException e) {
-                logger.error("Routing interrupted", e);
+                logger.info("Routing interrupted for incident {} during system shutdown.", incident.getId(), e);
                 Thread.currentThread().interrupt();
             }
         });
@@ -44,13 +47,17 @@ public void routeAsync(EmergencyDispatch incident) {
         if (executor != null && !executor.isShutdown()) {
             executor.shutdown(); 
             try {
-                if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                if (!executor.awaitTermination(4, TimeUnit.SECONDS)) {
                     executor.shutdownNow(); 
                 }
             } catch (InterruptedException e) {
-                executor.shutdownNow();
+                logger.error("testing", e);
                 Thread.currentThread().interrupt();
+            } 
+            finally{
+                executor.shutdownNow();
             }
         }
     }
+
 }

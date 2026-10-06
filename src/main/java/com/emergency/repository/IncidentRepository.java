@@ -1,75 +1,34 @@
 package com.emergency.repository;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.emergency.config.DatabaseManager;
 import com.emergency.model.EmergencyIncident;
 
-public class IncidentRepository {
-    private static final Logger logger = LoggerFactory.getLogger(IncidentRepository.class);
+public class IncidentRepository extends AbstractRepository<EmergencyIncident> {
 
     private static final String COL_STATUS = "status";
     private static final String COL_INCIDENT_ID = "incident_id";
     private static final String COL_DESCRIPTION = "description";
 
+    @Override
     public EmergencyIncident save(EmergencyIncident incident) {
-        String sql = "INSERT INTO t_incident (description, reported_timestamp, status) VALUES (?, CURRENT_TIMESTAMP, ?)";
-
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, new String[] { COL_INCIDENT_ID })) {
-
-            pstmt.setString(1, incident.getDescription());
-            pstmt.setString(2, incident.getStatus().name().toLowerCase());
-
-            int affectedRows = pstmt.executeUpdate();
-
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        incident.setId(generatedKeys.getObject(1, java.util.UUID.class));
-                    }
-                }
-            } else {
-                logger.warn("Warning: Saving incident failed, no rows affected.");
-            }
-
-        } catch (SQLException e) {
-            logger.error("Error saving parent incident to the database:", e);
-        }
+        String sql = "INSERT INTO t_incident (incident_id, description, reported_time, incident_status) VALUES (?, ?, CURRENT_TIMESTAMP, ?)";
+        this.executeInsertSQL(sql, incident.getId(), incident.getDescription(), incident.getStatus().name().toLowerCase());
 
         return incident;
     }
 
-    public Map<String, Integer> getStatusCounts() {
-        Map<String, Integer> statusCounts = new HashMap<>();
-        String sql = "SELECT status, COUNT(*) as total FROM t_incident GROUP BY status";
+    @Override
+    protected String getTableName() {
+        return "t_incident";
+    }
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-
-            while (rs.next()) {
-                String status = rs.getString(COL_STATUS);
-                if (status != null) {
-                    statusCounts.put(status.toLowerCase(), rs.getInt("total"));
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error retrieving status counts from the database:", e);
-        }
-
-        return statusCounts;
+    public Map<String, Integer> getIncidentStatusCounts() {
+        return getStatusCounts("incident_status"); 
     }
 
     public List<String> getActiveIncidentsFormatted() {
@@ -82,101 +41,77 @@ public class IncidentRepository {
         return fetchAndFormatIncidents(sql, "Resolved");
     }
 
-    /**
-     * Helper method: Executes the provided SQL and maps the result set into a formatted string.
-     * Prevents code duplication between active and resolved list generation.
-     */
-    private List<String> fetchAndFormatIncidents(String sql, String label) {
+private List<String> fetchAndFormatIncidents(String sql, String label) {
+    List<String> result = executeQuery(sql, rs -> {
         List<String> formattedIncidents = new ArrayList<>();
+        while (rs.next()) {
+            UUID id = rs.getObject(COL_INCIDENT_ID, UUID.class);
+            String description = rs.getString(COL_DESCRIPTION);
+            String status = rs.getString(COL_STATUS);
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql);
-             ResultSet rs = pstmt.executeQuery()) {
-
-            while (rs.next()) {
-                java.util.UUID id = rs.getObject(COL_INCIDENT_ID, java.util.UUID.class);
-                String description = rs.getString(COL_DESCRIPTION);
-                String status = rs.getString(COL_STATUS);
-
-                formattedIncidents.add(String.format("%s Incident:[ID: %s], %s, Status: %s",
-                        label, id.toString(), description, status.toUpperCase()));
-            }
-        } catch (SQLException e) {
-            logger.error("Error retrieving {} incidents from the database:", label, e);
+            formattedIncidents.add(String.format("%s Incident:[ID: %s], %s, Status: %s",
+                    label, id.toString(), description, status.toUpperCase()));
         }
-
         return formattedIncidents;
-    }
+    });
 
-    public String getIncidentStatus(UUID id) {
-        String sql = "SELECT status FROM t_incident WHERE incident_id = ?";
+    return result != null ? result : new ArrayList<>();
+}
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+public String getIncidentStatus(UUID id) {
+    String sql = "SELECT status FROM t_incident WHERE incident_id = ?";
 
-            pstmt.setObject(1, id);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString(COL_STATUS).toLowerCase();
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Error retrieving incident status for ID: {}", id, e);
+    return executeQuery(sql, rs -> {
+        if (rs.next()) {
+            return rs.getString(COL_STATUS).toLowerCase();
         }
         return null;
-    }
+    }, id);
+}
 
-    public boolean syncIncidentStatus(java.util.UUID incidentId) {
-        String countSql = "SELECT emergency_status, COUNT(*) as cnt FROM t_emergency_dispatches WHERE incident_id = ? GROUP BY emergency_status";
-        String updateSql = "UPDATE t_incident SET status = ?, resolved_timestamp = ? WHERE incident_id = ?";
+public boolean syncIncidentStatus(UUID incidentId) {
+    String countSql = "SELECT emergency_status, COUNT(*) as cnt FROM t_emergency_dispatches WHERE incident_id = ? GROUP BY emergency_status";
+    String updateSql = "UPDATE t_incident SET status = ?, resolved_timestamp = ? WHERE incident_id = ?";
 
-        try (Connection conn = DatabaseManager.getConnection()) {
-            int total = 0;
-            int resolvedCount = 0;
-            int dispatchedCount = 0;
-
-            try (PreparedStatement countStmt = conn.prepareStatement(countSql)) {
-                countStmt.setObject(1, incidentId);
-                try (ResultSet rs = countStmt.executeQuery()) {
-                    while (rs.next()) {
-                        String status = rs.getString("emergency_status");
-                        int count = rs.getInt("cnt");
-                        total += count;
-                        
-                        if ("resolved".equalsIgnoreCase(status)) {
-                            resolvedCount += count;
-                        } else if ("dispatched".equalsIgnoreCase(status)) {
-                            dispatchedCount += count;
-                        }
-                    }
-                }
+    int[] counts = executeQuery(countSql, rs -> {
+        int total = 0;
+        int  resolved = 0;
+        int  dispatched = 0;
+        while (rs.next()) {
+            String status = rs.getString("emergency_status");
+            int count = rs.getInt("cnt");
+            total += count;
+            
+            if ("resolved".equalsIgnoreCase(status)) {
+                resolved += count;
+            } else if ("dispatched".equalsIgnoreCase(status)) {
+                dispatched += count;
             }
-
-            if (total == 0) return false; 
-
-            String newStatus;
-            java.sql.Timestamp resolvedTimestamp = null;
-
-            if (resolvedCount == total) {
-                newStatus = "resolved";
-                resolvedTimestamp = new java.sql.Timestamp(System.currentTimeMillis());
-            } else if (dispatchedCount > 0 || resolvedCount > 0) {
-                newStatus = "dispatched";
-            } else {
-                newStatus = "pending";
-            }
-
-            try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-                updateStmt.setString(1, newStatus);
-                updateStmt.setTimestamp(2, resolvedTimestamp); 
-                updateStmt.setObject(3, incidentId);
-                return updateStmt.executeUpdate() > 0;
-            }
-
-        } catch (SQLException e) {
-            logger.error("Error syncing incident status for ID: {}", incidentId, e);
         }
+        return new int[]{total, resolved, dispatched};
+    }, incidentId);
+
+    if (counts == null || counts[0] == 0) {
         return false;
     }
+
+    int total = counts[0];
+    int resolvedCount = counts[1];
+    int dispatchedCount = counts[2];
+
+    String newStatus;
+    java.sql.Timestamp resolvedTimestamp = null;
+
+    if (resolvedCount == total) {
+        newStatus = "resolved";
+        resolvedTimestamp = new java.sql.Timestamp(System.currentTimeMillis());
+    } else if (dispatchedCount > 0 || resolvedCount > 0) {
+        newStatus = "dispatched";
+    } else {
+        newStatus = "pending";
+    }
+
+    int rowsUpdated = executeInsertSQL(updateSql, newStatus, resolvedTimestamp, incidentId);
+    return rowsUpdated > 0;
+}
 }

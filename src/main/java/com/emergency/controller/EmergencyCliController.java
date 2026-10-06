@@ -2,6 +2,7 @@ package com.emergency.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,15 +44,13 @@ public class EmergencyCliController {
 
         incidentRepository = new IncidentRepository();
         emergencyRepository = new EmergencyRepository();
-
         triageService = new TriageService(incidentRepository, emergencyRepository);
-
         dispatchRouter = new DispatchRouter();
         helper = new EmergencyInputHelper();
     }
 
     private void displayIncidentStatus() {
-        Map<String, Integer> incidentCounts = incidentRepository.getStatusCounts();
+        Map<String, Integer> incidentCounts = incidentRepository.getIncidentStatusCounts();
         int pendingIncidents = incidentCounts.getOrDefault(STATUS_PENDING, 0);
         int dispatchedIncidents = incidentCounts.getOrDefault(STATUS_DISPATCHED, 0);
         int resolvedIncidents = incidentCounts.getOrDefault(STATUS_RESOLVED, 0);
@@ -59,13 +58,12 @@ public class EmergencyCliController {
 
         logger.info("--- PARENT INCIDENTS ---");
         logger.info("Total   : {}", activeIncidents + resolvedIncidents);
-        logger.info("Active  : {} (Pending: {}, Dispatched: {})", activeIncidents, pendingIncidents,
-                dispatchedIncidents);
+        logger.info("Active  : {} (Pending: {}, Dispatched: {})", activeIncidents, pendingIncidents, dispatchedIncidents);
         logger.info("Resolved: {}", resolvedIncidents);
     }
 
     private void displayEmergencyStatus() {
-        Map<String, Integer> emergencyCounts = emergencyRepository.getStatusCounts();
+        Map<String, Integer> emergencyCounts = emergencyRepository.getEmergencyStatusCounts();
         int pendingEmergencies = emergencyCounts.getOrDefault(STATUS_PENDING, 0);
         int dispatchedEmergencies = emergencyCounts.getOrDefault(STATUS_DISPATCHED, 0);
         int resolvedEmergencies = emergencyCounts.getOrDefault(STATUS_RESOLVED, 0);
@@ -73,8 +71,7 @@ public class EmergencyCliController {
 
         logger.info("--- EMERGENCY UNITS ---");
         logger.info("Total   : {}", activeEmergencies + resolvedEmergencies);
-        logger.info("Active  : {} (Pending: {}, Dispatched: {})", activeEmergencies, pendingEmergencies,
-                dispatchedEmergencies);
+        logger.info("Active  : {} (Pending: {}, Dispatched: {})", activeEmergencies, pendingEmergencies, dispatchedEmergencies);
         logger.info("Resolved: {}", resolvedEmergencies);
     }
 
@@ -89,7 +86,7 @@ public class EmergencyCliController {
             }
         }
 
-        logger.info("--- ACTIVE EMERGENCY UNITS (Use these IDs for 'dispatch' or 'resolve') ---");
+        logger.info("--- ACTIVE EMERGENCY UNITS ---");
         List<EmergencyDispatch> pendings = emergencyRepository.getPendingEmergencies();
         List<EmergencyDispatch> dispatched = emergencyRepository.getDispatchedEmergencies();
 
@@ -160,6 +157,9 @@ public class EmergencyCliController {
         boolean active = true;
         while (active) {
             logger.info("Please enter the ID of the PENDING EMERGENCY UNIT to dispatch (or type 'exit' to cancel): ");
+            if (!scanner.hasNextLine()) {
+                break;
+            }
             String idText = scanner.nextLine().trim();
 
             if (idText.equalsIgnoreCase("exit")) {
@@ -195,6 +195,9 @@ public class EmergencyCliController {
         boolean active = true;
         while (active) {
             logger.info("Please enter the ID of the EMERGENCY UNIT to resolve (or type 'exit' to cancel): ");
+            if (!scanner.hasNextLine()) {
+                break;
+            }
             String idText = scanner.nextLine().trim();
 
             if (idText.equalsIgnoreCase("exit")) {
@@ -214,21 +217,18 @@ public class EmergencyCliController {
             java.util.UUID parentIncidentId = emergencyRepository.markEmergencyAsResolved(targetId);
 
             if (parentIncidentId == null) {
-                logger.info("Error: No active emergency found with ID {}. It may be invalid or already resolved.",
-                        targetId);
+                logger.info("Error: No active emergency found with ID {}. It may be invalid or already resolved.", targetId);
                 return true;
             }
 
             logger.info("Success: Emergency unit {} has been marked as RESOLVED.", targetId);
-
             incidentRepository.syncIncidentStatus(parentIncidentId);
             String newParentStatus = incidentRepository.getIncidentStatus(parentIncidentId);
 
             if (STATUS_RESOLVED.equalsIgnoreCase(newParentStatus)) {
                 logger.info("All units finished. Parent Incident {} is now OFFICIALLY RESOLVED.", parentIncidentId);
             } else if (logger.isInfoEnabled()) {
-                logger.info("Parent Incident {} remains open (Status: {}).", parentIncidentId,
-                        newParentStatus.toUpperCase());
+                logger.info("Parent Incident {} remains open (Status: {}).", parentIncidentId, newParentStatus.toUpperCase());
             }
 
             return false;
@@ -240,9 +240,10 @@ public class EmergencyCliController {
     }
 
     private void handleShutDown() {
-        if (dispatchRouter != null) {
-            dispatchRouter.shutdown();
-        }
+        // if (dispatchRouter == null) {
+        //     dispatchRouter.shutdown();
+        // }
+        dispatchRouter.shutdown();
     }
 
     private boolean processCommand(String input, Scanner scanner) {
@@ -276,7 +277,9 @@ public class EmergencyCliController {
                 return true;
             }
             case "exit" -> {
+                logger.info("before");
                 handleShutDown();
+                logger.info("after");
                 return true;
             }
             default -> {
@@ -297,15 +300,13 @@ public class EmergencyCliController {
         }
 
         for (EmergencyDispatch emergency : emergencies) {
-            if (emergency == null)
-                continue;
+            if (emergency == null) continue;
             processIncidentDetails(emergency, scanner);
         }
 
         for (EmergencyDispatch emergency : emergencies) {
-            if (emergency == null)
-                continue;
-            dispatchRouter.route(emergency);
+            if (emergency == null) continue;
+            dispatchRouter.routeAsync(emergency);
         }
     }
 
@@ -313,23 +314,19 @@ public class EmergencyCliController {
         switch (incident.getType()) {
             case FIRE -> {
                 logger.info("Are there any hazardous materials? ");
-                boolean hazmatInvolved = helper.askTrueOrFalseQuestions(scanner);
-                ((FireEmergency) incident).setHazmatInvolved(hazmatInvolved);
+                ((FireEmergency) incident).setHazmatInvolved(helper.askTrueOrFalseQuestions(scanner));
             }
             case MEDICAL -> {
                 logger.info("How many patients are injured? ");
-                int patientCount = helper.askForNumber(scanner);
-                ((MedicalEmergency) incident).setPatientCount(patientCount);
+                ((MedicalEmergency) incident).setPatientCount(helper.askForNumber(scanner));
             }
             case POLICE -> {
                 logger.info("Are there any weapon involved? ");
-                boolean weaponInvolved = helper.askTrueOrFalseQuestions(scanner);
-                ((PoliceEmergency) incident).setWeaponInvolved(weaponInvolved);
+                ((PoliceEmergency) incident).setWeaponInvolved(helper.askTrueOrFalseQuestions(scanner));
             }
             case COASTAL -> {
                 logger.info("Do we have people in distress? ");
-                boolean peopleInDistress = helper.askTrueOrFalseQuestions(scanner);
-                ((CoastGuardEmergency) incident).setPeopleInDistress(peopleInDistress);
+                ((CoastGuardEmergency) incident).setPeopleInDistress(helper.askTrueOrFalseQuestions(scanner));
             }
             case UNKNOWN -> {
                 logger.info("Is this a prank call? ");
@@ -338,12 +335,10 @@ public class EmergencyCliController {
 
                 if (prankCall) {
                     incident.setStatus(Status.RESOLVED);
-
                     emergencyRepository.markEmergencyAsResolved(incident.getId());
                     if (incident.getParentIncident() != null) {
                         incidentRepository.syncIncidentStatus(incident.getParentIncident().getId());
                     }
-
                     logger.info("Prank call detected. Incident marked as RESOLVED in the database.");
                 } else {
                     incident.setStatus(Status.PENDING);
@@ -355,7 +350,6 @@ public class EmergencyCliController {
     public void execution() {
         Scanner scanner = new Scanner(System.in);
         boolean active = true;
-        String input;
 
         while (active) {
             logger.info("\n=== EMERGENCY DISPATCH SYSTEM ===");
@@ -364,18 +358,27 @@ public class EmergencyCliController {
             logger.info("ACTIONS: 'dispatch', 'resolve'");
             logger.info("SYSTEM : 'exit'");
 
-            input = scanner.nextLine().trim();
+            if (!scanner.hasNextLine()) {
+                handleShutDown();
+                active = false;
+            } else {
+                String input = scanner.nextLine().trim();
 
-            try {
-                if ("exit".equalsIgnoreCase(input)) {
+                try {
+                    if ("exit".equalsIgnoreCase(input)) {
+                        logger.info("Shutting down Emergency Dispatch System...");
+                        handleShutDown();
+                        active = false;
+                    } else if (!processCommand(input, scanner)) {
+                        processEmergencyAlert(input, scanner);
+                    }
+                } catch (NoSuchElementException e) {
+                    logger.info("Input stream ended. Exiting system...", e);
+                    handleShutDown();
                     active = false;
+                } catch (Exception e) {
+                    logger.error("Alert was empty or invalid", e);
                 }
-                // else if(!processCommand(input, scanner)){
-                //     processEmergencyAlert(input, scanner);
-                // }
-            } 
-            catch (Exception e) {
-                logger.error("Alert was empty or invalid", e);
             }
         }
         scanner.close();
