@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS t_incident (
 );
 
 
-CREATE TABLE IF NOT EXISTS t_emergency_dispatch (
+CREATE TABLE IF NOT EXISTS t_emergency_dispatches (
     emergency_id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     comment VARCHAR(500),
     emergency_type VARCHAR(20) NOT NULL CHECK (emergency_type IN ('fire', 'medical', 'police', 'coastal', 'unknown')),

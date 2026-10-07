@@ -10,6 +10,10 @@ import java.util.UUID;
 
 public class EmergencyRepository extends AbstractRepository<EmergencyDispatch> {
 
+    @Override
+    protected String getTableName() {
+        return "t_emergency_dispatches";
+    }
 
     @Override
     public EmergencyDispatch save(EmergencyDispatch emergency) {
@@ -21,7 +25,7 @@ public class EmergencyRepository extends AbstractRepository<EmergencyDispatch> {
         return emergency;
     }
 
-public boolean markEmergencyAsDispatched(UUID emergencyId) {
+    public boolean markEmergencyAsDispatched(UUID emergencyId) {
         String sql = "UPDATE t_emergency_dispatches SET emergency_status = 'dispatched', dispatched_time = CURRENT_TIMESTAMP WHERE emergency_id = ?";
         
         int rowsUpdated = executeInsertSQL(sql, emergencyId);
@@ -45,85 +49,56 @@ public boolean markEmergencyAsDispatched(UUID emergencyId) {
         }, emergencyId);
     }
 
-    @Override
-    protected String getTableName() {
-        return "t_emergency_dispatches";
-    }
-
     public Map<String, Integer> getEmergencyStatusCounts() {
         return getStatusCounts("emergency_status");
     }
 
-    public List<EmergencyDispatch> getPendingEmergencies() {
-        return fetchEmergenciesByStatus("pending", Status.PENDING);
+   public List<EmergencyDispatch> getEmergenciesByStatus(Status status) {
+        return fetchEmergenciesByStatus(status.name().toLowerCase(), status);
     }
 
-    public List<EmergencyDispatch> getDispatchedEmergencies() {
-        return fetchEmergenciesByStatus("dispatched", Status.DISPATCHED);
-    }
-
-    public List<EmergencyDispatch> getResolvedEmergencies() {
-        return fetchEmergenciesByStatus("resolved", Status.RESOLVED);
-    }
-
-    public List<EmergencyDispatch> getFireEmergencies() {
-        return fetchEmergenciesByType("fire", EmergencyType.FIRE);
-    }
-
-    public List<EmergencyDispatch> getMedicalEmergencies() {
-        return fetchEmergenciesByType("medical", EmergencyType.MEDICAL);
-    }
-
-    public List<EmergencyDispatch> getPoliceEmergencies() {
-        return fetchEmergenciesByType("police", EmergencyType.POLICE);
-    }
-
-    public List<EmergencyDispatch> getCoastGuardEmergencies() {
-        return fetchEmergenciesByType("coastal", EmergencyType.COASTAL);
-    }
-
-    public List<EmergencyDispatch> getUnknownEmergencies() {
-        return fetchEmergenciesByType("unknown", EmergencyType.UNKNOWN);
+    public List<EmergencyDispatch> getEmergenciesByType(EmergencyType type) {
+        return fetchEmergenciesByType(type.name().toLowerCase(), type);
     }
 
     private List<EmergencyDispatch> fetchEmergenciesByStatus(String dbStatus, Status forcedStatus) {
-    String sql = "SELECT emergency_id, emergency_name FROM t_emergency_dispatches WHERE status = ?";
+        String sql = "SELECT emergency_id, comment FROM t_emergency_dispatches WHERE emergency_status = ?";
 
-    List<EmergencyDispatch> result = executeQuery(sql, rs -> {
-        List<EmergencyDispatch> emergencies = new ArrayList<>();
-        while (rs.next()) {
-            EmergencyDispatch dispatch = new EmergencyDispatch(null, null);
-            dispatch.setComment(rs.getString("emergency_name"));
-            dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
-            dispatch.setStatus(forcedStatus);
-            emergencies.add(dispatch);
-        }
-        return emergencies;
-    }, dbStatus);
-
-    return result != null ? result : new ArrayList<>();
-}
-
-private List<EmergencyDispatch> fetchEmergenciesByType(String dbType, EmergencyType forcedType) {
-    String sql = "SELECT emergency_id, emergency_name, status FROM t_emergency_dispatches WHERE type = ?";
-
-    List<EmergencyDispatch> result = executeQuery(sql, rs -> {
-        List<EmergencyDispatch> emergencies = new ArrayList<>();
-        while (rs.next()) {
-            EmergencyDispatch dispatch = new EmergencyDispatch(forcedType, null);
-            dispatch.setComment(rs.getString("emergency_name"));
-            dispatch.setId(rs.getObject("emergency_id", java.util.UUID.class));
-
-            String statusValue = rs.getString("status");
-            if (statusValue != null) {
-                dispatch.setStatus(Status.valueOf(statusValue.toUpperCase()));
+        List<EmergencyDispatch> result = executeQuery(sql, rs -> {
+            List<EmergencyDispatch> emergencies = new ArrayList<>();
+            while (rs.next()) {
+                EmergencyDispatch dispatch = new EmergencyDispatch(null, null);
+                dispatch.setComment(rs.getString("comment"));
+                dispatch.setId(rs.getObject("emergency_id", UUID.class));
+                dispatch.setStatus(forcedStatus);
+                emergencies.add(dispatch);
             }
+            return emergencies;
+        }, dbStatus);
 
-            emergencies.add(dispatch);
-        }
-        return emergencies;
-    }, dbType);
+        return result != null ? result : new ArrayList<>();
+    }
 
-    return result != null ? result : new ArrayList<>();
-}
+    private List<EmergencyDispatch> fetchEmergenciesByType(String dbType, EmergencyType forcedType) {
+        String sql = "SELECT emergency_id, comment, emergency_status FROM t_emergency_dispatches WHERE emergency_type = ?";
+
+        List<EmergencyDispatch> result = executeQuery(sql, rs -> {
+            List<EmergencyDispatch> emergencies = new ArrayList<>();
+            while (rs.next()) {
+                EmergencyDispatch dispatch = new EmergencyDispatch(forcedType, null);
+                dispatch.setComment(rs.getString("comment"));
+                dispatch.setId(rs.getObject("emergency_id", UUID.class));
+
+                String statusValue = rs.getString("emergency_status");
+                if (statusValue != null) {
+                    dispatch.setStatus(Status.valueOf(statusValue.toUpperCase()));
+                }
+
+                emergencies.add(dispatch);
+            }
+            return emergencies;
+        }, dbType);
+
+        return result != null ? result : new ArrayList<>();
+    }
 }

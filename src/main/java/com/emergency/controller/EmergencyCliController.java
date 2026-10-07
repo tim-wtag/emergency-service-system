@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.emergency.model.CoastGuardEmergency;
 import com.emergency.model.EmergencyDispatch;
+import com.emergency.model.EmergencyType;
 import com.emergency.model.FireEmergency;
 import com.emergency.model.MedicalEmergency;
 import com.emergency.model.PoliceEmergency;
@@ -87,8 +88,8 @@ public class EmergencyCliController {
         }
 
         logger.info("--- ACTIVE EMERGENCY UNITS ---");
-        List<EmergencyDispatch> pendings = emergencyRepository.getPendingEmergencies();
-        List<EmergencyDispatch> dispatched = emergencyRepository.getDispatchedEmergencies();
+        List<EmergencyDispatch> pendings = emergencyRepository.getEmergenciesByStatus(Status.PENDING);
+        List<EmergencyDispatch> dispatched = emergencyRepository.getEmergenciesByStatus(Status.DISPATCHED);
 
         if (pendings.isEmpty() && dispatched.isEmpty()) {
             logger.info("No active emergency units found.");
@@ -115,7 +116,7 @@ public class EmergencyCliController {
         }
 
         logger.info("--- RESOLVED EMERGENCY UNITS ---");
-        List<EmergencyDispatch> resolvedEmergencies = emergencyRepository.getResolvedEmergencies();
+        List<EmergencyDispatch> resolvedEmergencies = emergencyRepository.getEmergenciesByStatus(Status.RESOLVED);
 
         if (resolvedEmergencies.isEmpty()) {
             logger.info("No resolved emergency units found.");
@@ -129,11 +130,11 @@ public class EmergencyCliController {
     public void displayByDepartment() {
         logger.info("--- EMERGENCIES BY DEPARTMENT ---");
 
-        List<EmergencyDispatch> fire = emergencyRepository.getFireEmergencies();
-        List<EmergencyDispatch> medical = emergencyRepository.getMedicalEmergencies();
-        List<EmergencyDispatch> police = emergencyRepository.getPoliceEmergencies();
-        List<EmergencyDispatch> coastal = emergencyRepository.getCoastGuardEmergencies();
-        List<EmergencyDispatch> unknown = emergencyRepository.getUnknownEmergencies();
+        List<EmergencyDispatch> fire = emergencyRepository.getEmergenciesByType(EmergencyType.FIRE);
+        List<EmergencyDispatch> medical = emergencyRepository.getEmergenciesByType(EmergencyType.MEDICAL);
+        List<EmergencyDispatch> police = emergencyRepository.getEmergenciesByType(EmergencyType.POLICE);
+        List<EmergencyDispatch> coastal = emergencyRepository.getEmergenciesByType(EmergencyType.COASTAL);
+        List<EmergencyDispatch> unknown = emergencyRepository.getEmergenciesByType(EmergencyType.UNKNOWN);
 
         logger.info("FIRE DEPT ({} units):", fire.size());
         fire.forEach(e -> logger.info("  -> [ID: {}] Status: {}", e.getId(), e.getStatus()));
@@ -240,9 +241,6 @@ public class EmergencyCliController {
     }
 
     private void handleShutDown() {
-        // if (dispatchRouter == null) {
-        //     dispatchRouter.shutdown();
-        // }
         dispatchRouter.shutdown();
     }
 

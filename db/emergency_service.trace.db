@@ -1,3 +1,0 @@
-2026-09-25 09:43:28.830276+04:00 jdbc[3]: exception
-org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "T_INCIDENT" not found (this database is empty); SQL statement:
-SELECT status, COUNT(*) as total FROM t_incident GROUP BY status [42104-224]
