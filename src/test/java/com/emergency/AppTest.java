@@ -16,23 +16,29 @@ public class AppTest {
 
     private final InputStream originalSystemIn = System.in;
     private final PrintStream originalSystemOut = System.out;
+    private final PrintStream originalSystemErr = System.err;
     private ByteArrayOutputStream outputStreamCaptor;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         outputStreamCaptor = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(outputStreamCaptor));
+        PrintStream captureStream = new PrintStream(outputStreamCaptor);
+        
+        // Capture both out and err since SLF4J usually writes to System.err
+        System.setOut(captureStream);
+        System.setErr(captureStream);
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
+        // Restore all original streams to avoid affecting other test classes
         System.setIn(originalSystemIn);
         System.setOut(originalSystemOut);
+        System.setErr(originalSystemErr);
     }
 
     @Test
-    public void shouldProcessMedicalEmergencyAndExit() {
-
+    void shouldProcessMedicalEmergencyAndExit() {
         String simulatedUserInput = "bleed\n2\nexit\n";
         System.setIn(new ByteArrayInputStream(simulatedUserInput.getBytes()));
 
@@ -44,8 +50,8 @@ public class AppTest {
                 "The output did not contain the expected medical dispatch message.");
     }
 
-   @Test
-    public void shouldProcessMultipleEmergencyAndExit() {
+    @Test
+    void shouldProcessMultipleEmergencyAndExit() {
         String simulatedUserInput = "fire and bleed\nfalse\n2\nexit\n";
         
         System.setIn(new ByteArrayInputStream(simulatedUserInput.getBytes()));
@@ -62,7 +68,7 @@ public class AppTest {
     }
     
     @Test
-    public void shouldProcessUnknownEmergencyAndDispatchOperator() {
+    void shouldProcessUnknownEmergencyAndDispatchOperator() {
         String simulatedUserInput = "hello\nyes\nexit\n";
         System.setIn(new ByteArrayInputStream(simulatedUserInput.getBytes()));
 
@@ -72,8 +78,8 @@ public class AppTest {
 
         assertTrue(capturedOutput.contains("Is this a prank call?"),
             "Application did not ask the prank call question.");
+            
         assertTrue(capturedOutput.contains("[DISPATCH - OPERATOR] Alert unclear. Forwarding raw description to human operator: true"),
             "The output did not contain the expected Operator dispatch message.");
     }
-
 }

@@ -1,10 +1,10 @@
 package com.emergency.model;
 
-public class UnknownIncident extends EmergencyIncident {
+public class UnknownEmergency extends EmergencyDispatch {
     private boolean prankCall;
 
-    public UnknownIncident(String description, boolean prankCall) {
-        super(description, IncidentType.UNKNOWN);
+    public UnknownEmergency(boolean prankCall, EmergencyIncident incident) {
+        super(EmergencyType.UNKNOWN, incident);
         this.prankCall = prankCall;
     }
 

@@ -1,5 +1,5 @@
 package com.emergency.model;
 
-public enum IncidentStatus {
+public enum Status {
     PENDING, DISPATCHED, RESOLVED;
 }

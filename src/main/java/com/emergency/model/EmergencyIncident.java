@@ -1,41 +1,31 @@
 package com.emergency.model;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-public abstract class EmergencyIncident {
-    private static final AtomicInteger incidentId = new AtomicInteger(0);
+/*
+This Java object is a mapping for T_INCIDENT
+*/
+public class EmergencyIncident extends BaseEntity {
     private String description;
-    private IncidentType type;
-    private IncidentStatus status = IncidentStatus.PENDING;
-    private int id;
+    private Status status = Status.PENDING;
 
-    protected EmergencyIncident(String description, IncidentType type) {
+    public EmergencyIncident(String description) {
+        super();
         this.description = description;
-        this.type = type;
-        this.id = incidentId.getAndIncrement();
     }
 
-    public String getDescription() {
+    public String getDescription(){
         return description;
-    }
-
-    public IncidentType getType() {
-        return type;
-    }
-
-    public IncidentStatus getStatus(){
-        return status;
-    }
-
-    public void setStatus(IncidentStatus status){
-        this.status = status;
-    }
-
-    public int getId(){
-        return id;
     }
 
     public void setDescription(String description){
         this.description = description;
     }
+
+    public Status getStatus(){
+        return status;
+    }
+
+    public void setStatus(Status status){
+        this.status = status;
+    }
+
 }

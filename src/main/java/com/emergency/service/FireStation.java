@@ -1,12 +1,12 @@
 package com.emergency.service;
 
-import com.emergency.model.EmergencyIncident;
-import com.emergency.model.FireIncident;
+import com.emergency.model.EmergencyDispatch;
+import com.emergency.model.FireEmergency;
 
 public class FireStation implements EmergencyDispatcher {
     @Override
-    public void dispatch(EmergencyIncident incident) {
-        FireIncident fire = (FireIncident) incident;
+    public void dispatch(EmergencyDispatch incident) {
+        FireEmergency fire = (FireEmergency) incident;
         logger.info("[DISPATCH - FIRE] Routing engines. Hazmat: {}" ,fire.isHazmatInvolved());
     }
 }
