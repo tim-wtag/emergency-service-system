@@ -1,13 +1,13 @@
 package com.emergency.service;
 
-import com.emergency.model.EmergencyIncident;
-import com.emergency.model.PoliceIncident;
+import com.emergency.model.EmergencyDispatch;
+import com.emergency.model.PoliceEmergency;
 
 public class PoliceStation implements EmergencyDispatcher {
 
     @Override
-    public void dispatch(EmergencyIncident incident) {
-        PoliceIncident police = (PoliceIncident) incident;
+    public void dispatch(EmergencyDispatch incident) {
+        PoliceEmergency police = (PoliceEmergency) incident;
         logger.info("[DISPATCH - POLICE] Patrol units dispatched. Weapon: {}", police.isWeaponInvolved());
     }
 

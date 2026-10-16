@@ -1,13 +1,13 @@
 package com.emergency.service;
 
-import com.emergency.model.EmergencyIncident;
-import com.emergency.model.UnknownIncident;
+import com.emergency.model.EmergencyDispatch;
+import com.emergency.model.UnknownEmergency;
 
 public class HumanOperatorStation implements EmergencyDispatcher {
 
     @Override
-    public void dispatch(EmergencyIncident incident) {
-        UnknownIncident unclear = (UnknownIncident) incident;
+    public void dispatch(EmergencyDispatch incident) {
+        UnknownEmergency unclear = (UnknownEmergency) incident;
         logger.info("[DISPATCH - OPERATOR] Alert unclear. Forwarding raw description to human operator: {}", unclear.isPrankCall());
     }
 

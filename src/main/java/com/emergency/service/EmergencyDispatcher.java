@@ -3,9 +3,9 @@ package com.emergency.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.emergency.model.EmergencyIncident;
+import com.emergency.model.EmergencyDispatch;
 
 public interface EmergencyDispatcher {
     static final Logger logger = LoggerFactory.getLogger(EmergencyDispatcher.class);
-    void dispatch(EmergencyIncident incident);
+    void dispatch(EmergencyDispatch incident);
 }

@@ -1,5 +1,5 @@
 package com.emergency.model;
 
-public enum IncidentType {
+public enum EmergencyType {
     FIRE, MEDICAL, POLICE, COASTAL, UNKNOWN,;
 }

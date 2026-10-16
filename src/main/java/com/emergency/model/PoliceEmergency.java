@@ -1,10 +1,10 @@
 package com.emergency.model;
 
-public class PoliceIncident extends EmergencyIncident {
+public class PoliceEmergency extends EmergencyDispatch {
     private boolean weaponInvolved;
 
-    public PoliceIncident(String description, boolean weaponInvolved) {
-        super(description, IncidentType.POLICE);
+    public PoliceEmergency(boolean weaponInvolved, EmergencyIncident incident) {
+        super(EmergencyType.POLICE, incident);
         this.weaponInvolved = weaponInvolved;
     }
 

@@ -1,13 +1,13 @@
 package com.emergency.service;
 
-import com.emergency.model.EmergencyIncident;
-import com.emergency.model.MedicalIncident;
+import com.emergency.model.EmergencyDispatch;
+import com.emergency.model.MedicalEmergency;
 
 public class AmbulanceSquad implements EmergencyDispatcher {
 
     @Override
-    public void dispatch(EmergencyIncident incident) {
-        MedicalIncident medical = (MedicalIncident) incident;
+    public void dispatch(EmergencyDispatch incident) {
+        MedicalEmergency medical = (MedicalEmergency) incident;
         logger.info("[DISPATCH - MEDICAL] Paramedics deployed. Patients: {}" ,medical.getPatientCount());
     }
 
