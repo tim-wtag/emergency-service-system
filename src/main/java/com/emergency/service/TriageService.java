@@ -3,6 +3,9 @@ package com.emergency.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
+import com.emergency.controller.EmergencyRequest;
 import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardEmergency;
 import com.emergency.model.EmergencyDispatch;
@@ -11,27 +14,28 @@ import com.emergency.model.EmergencyKeyword;
 import com.emergency.model.FireEmergency;
 import com.emergency.model.MedicalEmergency;
 import com.emergency.model.PoliceEmergency;
+import com.emergency.model.Status;
 import com.emergency.model.UnknownEmergency;
 import com.emergency.repository.EmergencyRepository;
 import com.emergency.repository.IncidentRepository;
 
+@Service
 public class TriageService {
 
-    private final IncidentRepository incidentRepository;
-    private final EmergencyRepository emergencyRepository;
+    IncidentRepository incidentRepository;
+    EmergencyRepository emergencyRepository;
 
     public TriageService(IncidentRepository incidentRepository, EmergencyRepository emergencyRepository) {
         this.incidentRepository = incidentRepository;
         this.emergencyRepository = emergencyRepository;
     }
 
-    public List<EmergencyDispatch> parseAndSave(String input) {
+    public List<EmergencyDispatch> parse(String input) {
         if (input == null || input.trim().isEmpty()) {
             throw new EmptyAlertException("Cannot triage empty alert.");
         }
 
         EmergencyIncident mainIncident = new EmergencyIncident(input);
-        mainIncident = incidentRepository.save(mainIncident);
 
         List<EmergencyDispatch> emergencies = new ArrayList<>();
 
@@ -49,14 +53,30 @@ public class TriageService {
             }
         }
 
-        if (emergencies.isEmpty()) {
-            emergencies.add(new UnknownEmergency(false, mainIncident));
-        }
-
-        for (EmergencyDispatch emergency : emergencies) {
-            emergencyRepository.save(emergency);
-        }
-
         return emergencies;
+    }
+
+    public void applyDetails(EmergencyDispatch emergency, EmergencyRequest request) {
+        switch (emergency.getType()) {
+            case FIRE -> ((FireEmergency) emergency).setHazmatInvolved(request.isHazmatInvolved());
+            case MEDICAL -> ((MedicalEmergency) emergency).setPatientCount(request.getPatientCount());
+
+            case POLICE -> ((PoliceEmergency) emergency).setWeaponInvolved(request.isWeaponInvolved());
+
+            case COASTAL -> ((CoastGuardEmergency) emergency).setPeopleInDistress(request.isPeopleInDistress());
+
+            case UNKNOWN -> {
+                boolean prankCall = request.isPrankCall();
+                ((UnknownEmergency) emergency).setPrankCall(prankCall);
+
+                if (prankCall) {
+                    emergency.setStatus(Status.RESOLVED);
+                    emergencyRepository.markEmergencyAsResolved(emergency.getId());
+
+                } else {
+                    emergency.setStatus(Status.PENDING);
+                }
+            }
+        }
     }
 }

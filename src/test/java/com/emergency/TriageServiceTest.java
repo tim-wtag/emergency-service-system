@@ -12,13 +12,10 @@ import org.junit.jupiter.api.Test;
 import com.emergency.exception.EmptyAlertException;
 import com.emergency.model.CoastGuardEmergency;
 import com.emergency.model.EmergencyDispatch;
-import com.emergency.model.EmergencyIncident;
 import com.emergency.model.FireEmergency;
 import com.emergency.model.MedicalEmergency;
 import com.emergency.model.PoliceEmergency;
 import com.emergency.model.UnknownEmergency;
-import com.emergency.repository.EmergencyRepository;
-import com.emergency.repository.IncidentRepository;
 import com.emergency.service.TriageService;
 
 class TriageServiceTest {
@@ -32,45 +29,45 @@ class TriageServiceTest {
         incidentSaveCount = 0;
         emergencySaveCount = 0;
 
-        IncidentRepository stubIncidentRepo = new IncidentRepository() {
-            @Override
-            public EmergencyIncident save(EmergencyIncident incident) {
-                incidentSaveCount++;
-                return incident;
-            }
-        };
+        // IncidentRepository stubIncidentRepo = new IncidentRepository() {
+        //     @Override
+        //     public EmergencyIncident save(EmergencyIncident incident) {
+        //         incidentSaveCount++;
+        //         return incident;
+        //     }
+        // };
 
-        EmergencyRepository stubEmergencyRepo = new EmergencyRepository() {
-            @Override
-            public EmergencyDispatch save(EmergencyDispatch emergency) {
-                emergencySaveCount++;
-                return emergency;
-            }
-        };
-        triage = new TriageService(stubIncidentRepo, stubEmergencyRepo);
+        // EmergencyRepository stubEmergencyRepo = new EmergencyRepository() {
+        //     @Override
+        //     public EmergencyDispatch save(EmergencyDispatch emergency) {
+        //         emergencySaveCount++;
+        //         return emergency;
+        //     }
+        // // };
+        // triage = new TriageService(stubIncidentRepo, stubEmergencyRepo);
     }
 
     @Test
     void shouldThrowExceptionWhenInputIsNull() {
-        assertThrows(EmptyAlertException.class, () -> triage.parseAndSave(null));
+        assertThrows(EmptyAlertException.class, () -> triage.parse(null));
         assertEquals(0, incidentSaveCount, "Should not attempt to save on null input");
     }
 
     @Test
     void shouldThrowExceptionWhenInputIsEmpty() {
-        assertThrows(EmptyAlertException.class, () -> triage.parseAndSave(""));
+        assertThrows(EmptyAlertException.class, () -> triage.parse(""));
         assertEquals(0, incidentSaveCount, "Should not attempt to save on empty input");
     }
 
     @Test
     void shouldThrowExceptionForWhitespaceInput() {
-        assertThrows(EmptyAlertException.class, () -> triage.parseAndSave("  "));
+        assertThrows(EmptyAlertException.class, () -> triage.parse("  "));
         assertEquals(0, incidentSaveCount, "Should not attempt to save on whitespace input");
     }
 
     @Test
     void shouldCreateFireIncidentAndSave() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("fire");
+        List<EmergencyDispatch> incidents = triage.parse("fire");
 
         assertEquals(1, incidents.size());
         assertInstanceOf(FireEmergency.class, incidents.get(0));
@@ -80,7 +77,7 @@ class TriageServiceTest {
 
     @Test
     void shouldCreateMedicalIncidentAndSave() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("bleed");
+        List<EmergencyDispatch> incidents = triage.parse("bleed");
 
         assertEquals(1, incidents.size());
         assertInstanceOf(MedicalEmergency.class, incidents.get(0));
@@ -90,7 +87,7 @@ class TriageServiceTest {
 
     @Test
     void shouldCreatePoliceIncidentAndSave() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("crime");
+        List<EmergencyDispatch> incidents = triage.parse("crime");
 
         assertEquals(1, incidents.size());
         assertInstanceOf(PoliceEmergency.class, incidents.get(0));
@@ -100,7 +97,7 @@ class TriageServiceTest {
 
     @Test
     void shouldCreateCoastGuardIncidentAndSave() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("drowning");
+        List<EmergencyDispatch> incidents = triage.parse("drowning");
 
         assertEquals(1, incidents.size());
         assertInstanceOf(CoastGuardEmergency.class, incidents.get(0));
@@ -110,7 +107,7 @@ class TriageServiceTest {
 
     @Test
     void shouldCreateUnknownIncidentAndSave() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("random unknown event");
+        List<EmergencyDispatch> incidents = triage.parse("random unknown event");
 
         assertEquals(1, incidents.size(), "Should fall back to unknown if no keywords match");
         assertInstanceOf(UnknownEmergency.class, incidents.get(0));
@@ -120,7 +117,7 @@ class TriageServiceTest {
 
     @Test
     void shouldCreateMultipleIncidentsAndSaveThemAll() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("fire crime bleed theft");
+        List<EmergencyDispatch> incidents = triage.parse("fire crime bleed theft");
 
         assertEquals(3, incidents.size(), "Should identify 3 distinct incidents");
         assertInstanceOf(FireEmergency.class, incidents.get(0));
@@ -133,7 +130,7 @@ class TriageServiceTest {
 
     @Test
     void shouldHandleMixedCaseKeywords() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("fIrE and bLeEd");
+        List<EmergencyDispatch> incidents = triage.parse("fIrE and bLeEd");
 
         assertEquals(2, incidents.size(), "Case should be ignored during keyword matching");
         assertInstanceOf(FireEmergency.class, incidents.get(0));
@@ -145,7 +142,7 @@ class TriageServiceTest {
 
     @Test
     void shouldCreateAllIncidents() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("fire ambulance doctor crime theft drowning bleed");
+        List<EmergencyDispatch> incidents = triage.parse("fire ambulance doctor crime theft drowning bleed");
 
         assertEquals(4, incidents.size(), "Should consolidate all keywords into exactly 4 incidents");
         assertInstanceOf(FireEmergency.class, incidents.get(0));
@@ -159,7 +156,7 @@ class TriageServiceTest {
 
     @Test
     void shouldNotAddDuplicateIncidentTypes() {
-        List<EmergencyDispatch> incidents = triage.parseAndSave("fire fire fire");
+        List<EmergencyDispatch> incidents = triage.parse("fire fire fire");
 
         assertEquals(1, incidents.size(), "Should only create a single FireIncident even with multiple fire keywords");
         assertInstanceOf(FireEmergency.class, incidents.get(0));
