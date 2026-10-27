@@ -2,20 +2,15 @@ package com.emergency.service;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.springframework.stereotype.Service;
 
 import com.emergency.controller.EmergencyRequest;
 import com.emergency.exception.EmptyAlertException;
-import com.emergency.model.CoastGuardEmergency;
 import com.emergency.model.EmergencyDispatch;
 import com.emergency.model.EmergencyIncident;
 import com.emergency.model.EmergencyKeyword;
-import com.emergency.model.FireEmergency;
-import com.emergency.model.MedicalEmergency;
-import com.emergency.model.PoliceEmergency;
+import com.emergency.model.EmergencyType;
 import com.emergency.model.Status;
-import com.emergency.model.UnknownEmergency;
 import com.emergency.repository.EmergencyRepository;
 import com.emergency.repository.IncidentRepository;
 
@@ -36,21 +31,26 @@ public class TriageService {
         }
 
         EmergencyIncident mainIncident = new EmergencyIncident(input);
-
+        mainIncident = incidentRepository.save(mainIncident);
+        
         List<EmergencyDispatch> emergencies = new ArrayList<>();
 
         for (EmergencyKeyword keyword : EmergencyKeyword.values()) {
             for (String kw : keyword.getKeyword()) {
                 if (input.toLowerCase().contains(kw.toLowerCase())) {
                     switch (keyword) {
-                        case FIRE_KEYWORD -> emergencies.add(new FireEmergency(false, mainIncident));
-                        case MEDICAL_KEYWORD -> emergencies.add(new MedicalEmergency(0, mainIncident));
-                        case POLICE_KEYWORD -> emergencies.add(new PoliceEmergency(false, mainIncident));
-                        case COASTAL_KEYWORD -> emergencies.add(new CoastGuardEmergency(false, mainIncident));
+                        case FIRE_KEYWORD -> emergencies.add(new EmergencyDispatch(EmergencyType.FIRE, mainIncident));
+                        case MEDICAL_KEYWORD -> emergencies.add(new EmergencyDispatch(EmergencyType.MEDICAL, mainIncident));
+                        case POLICE_KEYWORD -> emergencies.add(new EmergencyDispatch(EmergencyType.POLICE, mainIncident));
+                        case COASTAL_KEYWORD -> emergencies.add(new EmergencyDispatch(EmergencyType.COASTAL, mainIncident));
                     }
                     break;
                 }
             }
+        }
+
+        if (emergencies.isEmpty()) {
+            emergencies.add(new EmergencyDispatch(EmergencyType.UNKNOWN, mainIncident));
         }
 
         return emergencies;
@@ -58,21 +58,16 @@ public class TriageService {
 
     public void applyDetails(EmergencyDispatch emergency, EmergencyRequest request) {
         switch (emergency.getType()) {
-            case FIRE -> ((FireEmergency) emergency).setHazmatInvolved(request.isHazmatInvolved());
-            case MEDICAL -> ((MedicalEmergency) emergency).setPatientCount(request.getPatientCount());
-
-            case POLICE -> ((PoliceEmergency) emergency).setWeaponInvolved(request.isWeaponInvolved());
-
-            case COASTAL -> ((CoastGuardEmergency) emergency).setPeopleInDistress(request.isPeopleInDistress());
-
+            case FIRE -> emergency.addDetail("hazmatInvolved", String.valueOf(request.isHazmatInvolved()));
+            case MEDICAL -> emergency.addDetail("patientCount", String.valueOf(request.getPatientCount()));
+            case POLICE -> emergency.addDetail("weaponInvolved", String.valueOf(request.isWeaponInvolved()));
+            case COASTAL -> emergency.addDetail("peopleInDistress", String.valueOf(request.isPeopleInDistress()));
             case UNKNOWN -> {
                 boolean prankCall = request.isPrankCall();
-                ((UnknownEmergency) emergency).setPrankCall(prankCall);
+                emergency.addDetail("prankCall", String.valueOf(prankCall));
 
                 if (prankCall) {
                     emergency.setStatus(Status.RESOLVED);
-                    emergencyRepository.markEmergencyAsResolved(emergency.getId());
-
                 } else {
                     emergency.setStatus(Status.PENDING);
                 }

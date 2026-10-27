@@ -1,23 +1,27 @@
 package com.emergency.model;
 
 import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.Map;
 
+import com.emergency.config.MapToJsonConverter;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
 @Entity
-//@Inheritance (strategy = InheritanceType.JOINED)
 public class EmergencyDispatch extends BaseEntity {
+    
     private String description;
 
     @Enumerated(EnumType.STRING)
     private EmergencyType type;
+    
     private LocalTime dispatchedTime;
     private LocalTime resolvedTime;
 
@@ -28,7 +32,11 @@ public class EmergencyDispatch extends BaseEntity {
     @JoinColumn(name = "incident_id")
     private EmergencyIncident parentIncident;
 
-    public EmergencyDispatch(){
+    @Convert(converter = MapToJsonConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private Map<String, String> details = new HashMap<>();
+
+    public EmergencyDispatch() {
         super();
     }
 
@@ -38,47 +46,67 @@ public class EmergencyDispatch extends BaseEntity {
         this.parentIncident = incident;
     }
 
-    public String getDescription() {
-        return description;
+    public void addDetail(String key, String value) {
+        this.details.put(key, value);
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public String getDetail(String key) {
+        return this.details.get(key);
     }
 
-    public EmergencyType getType() {
-        return type;
+    public Map<String, String> getDetails() {
+        return details;
     }
 
-    public Status getStatus() {
-        return status;
+    public void setDetails(Map<String, String> details) {
+        this.details = details;
     }
 
-    public void setStatus(Status status) {
-        this.status = status;
+    public String getDescription() { 
+        return description; 
     }
 
-    public EmergencyIncident getParentIncident() {
-        return parentIncident;
+    public void setDescription(String description) { 
+        this.description = description; 
     }
 
-    public void setParentIncident(EmergencyIncident parentIncident) {
-        this.parentIncident = parentIncident;
+    public EmergencyType getType() { 
+        return type; 
     }
 
-    public LocalTime getDispatchedTime() {
-        return dispatchedTime;
+    public void setType(EmergencyType type) { 
+        this.type = type; 
     }
 
-    public void setDispatchedTime(LocalTime time) {
-        this.dispatchedTime = time;
+    public Status getStatus() { 
+        return status; 
+    }
+    
+    public void setStatus(Status status) { 
+        this.status = status; 
     }
 
-    public LocalTime getResolvedTime() {
-        return resolvedTime;
+    public EmergencyIncident getParentIncident() { 
+        return parentIncident; 
     }
 
-    public void setResolvedTime(LocalTime time) {
-        this.resolvedTime = time;
+    public void setParentIncident(EmergencyIncident parentIncident) { 
+        this.parentIncident = parentIncident; 
+    }
+
+    public LocalTime getDispatchedTime() { 
+        return dispatchedTime; 
+    }
+
+    public void setDispatchedTime(LocalTime time) { 
+        this.dispatchedTime = time; 
+    }
+
+    public LocalTime getResolvedTime() { 
+        return resolvedTime; 
+    }
+
+    public void setResolvedTime(LocalTime time) { 
+        this.resolvedTime = time; 
     }
 }
