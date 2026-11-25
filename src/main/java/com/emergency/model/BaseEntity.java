@@ -2,14 +2,16 @@ package com.emergency.model;
 
 import java.util.UUID;
 
-//This base class will be reused by all model objects and core fields such as id and its logic will be handle onlu
-//here.
-public abstract class BaseEntity {
-    public UUID id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 
-    protected BaseEntity() {
-        this.id = UUID.randomUUID();
-    }
+@MappedSuperclass 
+public abstract class BaseEntity {
+    @Id 
+    @GeneratedValue(strategy = GenerationType.UUID)
+    public UUID id;
 
     public UUID getId() {
         return id;

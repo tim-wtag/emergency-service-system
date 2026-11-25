@@ -6,9 +6,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import com.emergency.model.EmergencyDispatch;
 
+@Service 
 public class DispatchRouter {
     private static final Logger logger = LoggerFactory.getLogger(DispatchRouter.class);
     private final ExecutorService executor = Executors.newFixedThreadPool(3);

@@ -1,14 +1,19 @@
 package com.emergency.service;
 
-import com.emergency.model.CoastGuardEmergency;
 import com.emergency.model.EmergencyDispatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class CoastGuard implements EmergencyDispatcher{
+public class CoastGuard implements EmergencyDispatcher {
+
+    private static final Logger logger = LoggerFactory.getLogger(CoastGuard.class);
 
     @Override
     public void dispatch(EmergencyDispatch incident) {
-        CoastGuardEmergency coastGuard = (CoastGuardEmergency) incident;
-        logger.info("[DISPATCH - Drowning] Boat deployed. People in distress: {}", coastGuard.isPeopleInDistress());
+        String peopleInDistressStr = incident.getDetail("peopleInDistress");
+        
+        boolean peopleInDistress = Boolean.parseBoolean(peopleInDistressStr);
+        
+        logger.info("[DISPATCH - Drowning] Boat deployed. People in distress: {}", peopleInDistress);
     }
-
 }

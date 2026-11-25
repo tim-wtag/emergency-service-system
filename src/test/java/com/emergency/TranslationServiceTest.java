@@ -16,7 +16,7 @@ class TranslationServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        translation = new TranslationService("src/main/resources/dictionary.json");
+        translation = new TranslationService();
     }
 
     @Test
@@ -104,7 +104,7 @@ class TranslationServiceTest {
             "vole, theft",
             "diebstahl, theft" })
     void shouldTranslateKeywords(String input, String expected) throws Exception {
-        TranslationService translationTest = new TranslationService("src/main/resources/dictionary.json");
+        TranslationService translationTest = new TranslationService();
         assertEquals(expected, translationTest.translateToEnglish(input));
     }
 }
